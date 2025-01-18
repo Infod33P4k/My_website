@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Write-Up: [Ariekei]</title>
+	    <style>
+		* {
+		    margin: 0;
+		    padding: 0;
+		    box-sizing: border-box;
+		}
+
+		body {
+		    background-color: #0d1117;
+		    color: #c9d1d9;
+		    font-family: 'Fira Code', monospace;
+		}
+
+		a {
+		    color: #32cd32;  /* Green link color */
+		    text-decoration: none;
+		}
+
+		a:hover {
+		    text-decoration: underline;  /* Underline effect on hover */
+		}
+
+		header {
+		    background-color: #161b22;  /* Dark background for the header */
+		    padding: 10px 0;
+		}
+
+		.navbar {
+		    display: flex;
+		    justify-content: space-between;
+		    align-items: center;
+		    padding: 0 20px;
+		}
+
+		.navbar h1 {
+		    color: white;
+		    font-size: 24px;
+		}
+
+		.navbar nav ul {
+		    list-style: none;
+		}
+
+		.navbar nav ul li {
+		    display: inline;
+		    margin: 0 15px;
+		}
+
+		.navbar nav ul li a {
+		    color: #32cd32;  /* Green links in navbar */
+		    text-decoration: none;
+		    font-size: 18px;
+		}
+
+		.navbar nav ul li a:hover {
+		    text-decoration: underline;  /* Underline effect for navbar links */
+		}
+
+		main {
+		    padding: 20px;
+		}
+
+		.section {
+		    padding: 50px 0;  /* Additional padding for sections */
+		}
+
+		.write-up h2 {
+		    color: #32cd32;  /* Green for headings */
+		    margin-bottom: 20px;
+		}
+
+		.content p {
+		    font-size: 16px;
+		    line-height: 1.6;
+		}
+
+		.card {
+		    background-color: #161b22;  /* Dark background for cards */
+		    border: none;
+		    padding: 20px;
+		    margin: 10px 0;
+		}
+
+		.btn-primary {
+		    background-color: #32cd32;  /* Green button */
+		    border: none;
+		    padding: 10px 20px;
+		    font-size: 16px;
+		    color: white;
+		    cursor: pointer;
+		    border-radius: 5px;
+		}
+
+		.btn-primary:hover {
+		    background-color: #28a428;  /* Darker green on hover */
+		}
+
+		footer {
+		    background-color: #161b22;
+		    color: white;
+		    text-align: center;
+		    padding: 10px;
+		    margin-top: 20px;
+		}
+
+		/* Styles for code block and copy button */
+		.code-block {
+		    position: relative;
+		    margin: 20px 0;
+		}
+
+		.copy-btn {
+		    position: absolute;
+		    top: 10px;
+		    right: 10px;
+		    background-color: #2d333b;
+		    color: #c9d1d9;
+		    border: none;
+		    padding: 5px 10px;
+		    border-radius: 4px;
+		    cursor: pointer;
+		    font-size: 12px;
+		}
+
+		.copy-btn:hover {
+		    background-color: #444c56;
+		}
+
+		pre.bash {
+		    background-color: #161b22;
+		    padding: 10px;
+		    border-radius: 4px;
+		    color: #c9d1d9;
+		    overflow-x: auto;
+		}
+	    </style>
+</head>
+<body>
+    <!-- Header Section -->
+    <header>
+        <div class="navbar">
+            <h1>D3p4K-Writeup</h1>
+            <nav>
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="write-ups.html">Write-Ups</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Write-Up Introduction Section -->
+        <section class="section write-up">
+            <h2>Ariekei - Hack The Box</h2>
+            <h7>Linux · Insane</h7>
+         </section>
+
+        <!-- Enumeration Section -->
+        <section class="section enumeration">
+            <h2><b>Enumeration:</b></h2>
+            <h3>Rustscan:</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyToClipboard('rustscan-output')">Copy</button>
+                <pre id="rustscan-output" class="bash">
+rustscan -a 10.129.95.221 -- -sC -sV -oA Ariekei
+.----. .-. .-. .----..---.  .----. .---.   .--.  .-. .-.
+| {}  }| { } |{ {__ {_   _}{ {__  /  ___} / {} \ |  `| |
+| .-. \| {_} |.-._} } | |  .-._} }\     }/  /\  \| |\  |
+`-' `-'`-----'`----'  `-'  `----'  `---' `-'  `-'`-' `-'
+Open 10.129.95.22:22
+Open 10.129.95.221:443
+Open 10.129.95.221:1022
+PORT     STATE SERVICE  REASON         VERSION
+22/tcp   open  ssh      syn-ack ttl 63 OpenSSH 7.2p2 Ubuntu 4ubuntu2.2 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   2048 a7:5b:ae:65:93:ce:fb:dd:f9:6a:7f:de:50:67:f6:ec (RSA)
+|   ...
+443/tcp  open  ssl/http syn-ack ttl 62 nginx 1.10.2
+| tls-nextprotoneg: 
+|   http/1.1
+|   ...
+|_http-title: Site Maintenance
+1022/tcp open  ssh      syn-ack ttl 62 OpenSSH 6.6.1p1 Ubuntu 2ubuntu2.8 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   ...
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+                </pre>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer Section -->
+    <footer>
+        <p>&copy; 2025 D3p4K. All rights reserved.</p>
+    </footer>
+
+    <!-- Copy to Clipboard Script -->
+    <script>
+        function copyToClipboard(elementId) {
+            const content = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(content).then(() => {
+                alert('Copied to clipboard!');
+            }).catch(err => {
+                alert('Failed to copy text: ', err);
+            });
+        }
+    </script>
+</body>
+</html>
