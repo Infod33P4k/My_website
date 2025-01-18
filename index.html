@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio - D3p4k</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Fira Code', monospace;
+        }
+        a {
+            color: #32cd32;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .navbar {
+            background-color: #161b22;
+        }
+        .section {
+            padding: 50px 0;
+        }
+        .card {
+            background-color: #161b22;
+            border: none;
+        }
+        .btn-primary {
+            background-color: #32cd32;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #28a428;
+        }
+        .socials {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+        }
+        .socials a {
+            color: white;
+            text-align: center;
+            font-size: 20px;
+        }
+        .socials svg {
+            fill: white;
+        }
+        .socials a:hover {
+            color: #32cd32;
+        }
+        
+        
+        /* Certification Section */
+	#certifications {
+	    padding: 50px 0;
+	}
+
+	.certificate-card {
+	    background-color: #ffffff;
+	    border-radius: 15px;  /* Curved edges */
+	    overflow: hidden;
+	    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+	    margin-bottom: 30px;
+	}
+
+	.certificate-img-container {
+	    position: relative;
+	    overflow: hidden;
+	}
+
+	.certificate-img {
+	    width: 100%;
+	    height: auto;
+	    display: block;
+	    transition: transform 0.3s ease-in-out;  /* Smooth scaling effect */
+	}
+
+	.certificate-info {
+	    position: absolute;
+	    top: 50%;
+	    left: 50%;
+	    transform: translate(-50%, -50%);
+	    background-color: rgba(0, 0, 0, 0.7);  /* Semi-transparent dark background */
+	    color: #ffffff;
+	    padding: 20px;
+	    text-align: center;
+	    border-radius: 10px;
+	    opacity: 0;
+	    transition: opacity 0.3s ease;
+	    visibility: hidden;
+	}
+
+	.certificate-info h4 {
+	    font-size: 1.5rem;
+	    margin-bottom: 10px;
+	}
+
+	.certificate-info p {
+	    font-size: 1rem;
+	}
+
+	/* Show certificate info on hover */
+	.certificate-img-container:hover .certificate-info {
+	    opacity: 1;
+	    visibility: visible;
+	}
+
+	.certificate-img-container:hover .certificate-img {
+	    transform: scale(1.1);  /* Slight zoom effect */
+	}
+
+	/* Ensure responsive layout */
+	@media (max-width: 768px) {
+	    .certificate-card {
+		margin-bottom: 20px;
+	    }
+	}
+	
+	/* Write-Ups Section */
+	#writeups {
+	    padding: 50px 0;
+	}
+
+	.writeup-card {
+	    background-color: #ffffff;
+	    border-radius: 15px;  /* Curved edges */
+	    overflow: hidden;
+	    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+	    margin-bottom: 30px;
+	    position: relative;
+	}
+
+	/* Image Styling */
+	.writeup-img {
+	    width: 100%;
+	    height: auto;
+	    display: block;
+	    border-bottom: 2px solid #f1f1f1;
+	    transition: transform 0.3s ease-in-out;
+	}
+
+	/* Hover effect: Image zooms in */
+	.writeup-card:hover .writeup-img {
+	    transform: scale(1.05);
+	}
+
+	/* Info Styling */
+	.writeup-info {
+	    padding: 15px;
+	    text-align: center;
+	    position: absolute;
+	    top: 0;
+	    left: 0;
+	    right: 0;
+	    bottom: 0;
+	    background: rgba(0, 0, 0, 0.6);
+	    color: white;
+	    opacity: 0;
+	    transition: opacity 0.3s ease;
+	    display: flex;
+	    flex-direction: column;
+	    justify-content: center;
+	}
+
+	.writeup-card:hover .writeup-info {
+	    opacity: 1;
+	}
+
+	.writeup-info h4 {
+	    font-size: 1.25rem;
+	    margin-bottom: 10px;
+	}
+
+	.writeup-info p {
+	    font-size: 1rem;
+	    margin-bottom: 20px;
+	}
+
+	/* Button Styling */
+	.read-more {
+	    padding: 10px 20px;
+	    background-color: #ff5722;
+	    color: white;
+	    border: none;
+	    border-radius: 5px;
+	    cursor: pointer;
+	    text-transform: uppercase;
+	    font-weight: bold;
+	}
+
+	.read-more:hover {
+	    background-color: #e64a19;
+	}
+
+	/* Ensure responsive layout */
+	@media (max-width: 768px) {
+	    .writeup-card {
+		margin-bottom: 20px;
+	    }
+	}
+
+    </style>
+</head>
+<body>
+    <!-- Socials -->
+    <div class="socials">
+        <a href="https://www.linkedin.com" target="_blank"><i class="fab fa-linkedin"></i></a>
+        <a href="https://app.hackthebox.com/profile/1979344" target="_blank">
+            <svg style="width: 24px; height: 24px;" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <title>Hack The Box</title>
+                <path d="M11.9959.0008a1.1187 1.1187 0 00-.057.002.8993.8993 0 00-.2358.0498.9067.9067 0 00-.1652.079L1.9357 5.675a.889.889 0 00-.4444.7699c0 .006.0004.0128.0006.0192-.0002.007 0 .014 0 .0212V17.556a.889.889 0 00.469.7837l9.5983 5.5416c.018.0102.036.0197.054.0287v.002a.8568.8568 0 00.083.0348c0 .001.01.003.012.004.028.01.056.0177.085.0245.01.001.011.003.016.004.028.006.057.0112.086.0146 0 .0005.01.0009.014.001.03.003.061.005.091.005s.061-.002.091-.005c0-.0005.01-.0009.014-.001a.6831.6831 0 00.086-.0146c.01-.001.011-.002.016-.004a.9404.9404 0 00.085-.0245c0-.001.01-.003.012-.004a.8818.8818 0 00.083-.0347v-.002a1.086 1.086 0 00.054-.0287l9.5986-5.5416a.889.889 0 00.4689-.7837V6.4786c0-.009-.0006-.0172-.0008-.0258h.0003v-.008a.8886.8886 0 00-.3117-.6755c-.01-.008-.019-.0162-.029-.0241 0-.002-.01-.005-.01-.007a.8988.8988 0 00-.1074-.0705L12.4533.1267a.8872.8872 0 00-.4646-.1266zm.01 2.2523c.072 0 .1443.0187.209.056l6.5366 3.774c.2789.161.2789.5633 0 .7243l-6.5367 3.774a.4182.4182 0 01-.4182 0L5.26 6.8074c-.2788-.1609-.2789-.5633 0-.7243l6.5368-3.774a.4193.4193 0 01.209-.056zm-8.0801 6.458a.4145.4145 0 01.215.0565l6.524 3.7666a.417.417 0 01.2086.3612v7.5326c0 .3212-.3477.522-.626.3613l-6.5237-3.7666a.4172.4172 0 01-.2086-.3613V9.1288c0-.2408.1955-.414.4107-.4177zm16.1599 0c.215.004.4107.1768.4107.4177v7.5325c0 .149-.08.2868-.2087.3614l-6.5239 3.7666c-.278.1606-.6258-.0401-.6258-.3614v-7.5325c0-.149.08-.2867.2086-.3613l6.5238-3.7666a.415.415 0 01.2152-.0565z" fill="white"></path>
+            </svg>
+        </a>
+        <a href="https://github.com" target="_blank"><i class="fab fa-github"></i></a>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">D3p4K</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#certifications">Certifications</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#tools">Tools</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#projects">Projects</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#writeups">Write-Ups</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="section text-center">
+        <div class="container">
+            <h1>Welcome to My Portfolio</h1>
+            <p>Ethical Hacker | Penetration Tester | Security Enthusiast</p>
+        </div>
+    </header>
+
+    <!-- About Section -->
+    <section id="about" class="section">
+        <div class="container text-center">
+            <h2>About Me</h2>
+            <p>I am a penetration tester specializing in ethical hacking, vulnerability assessments, and cybersecurity solutions. With a passion for securing systems, I aim to make the digital world a safer place.</p>
+            <a href="cv.pdf" class="btn btn-primary" download>Download My CV</a>
+        </div>
+    </section>
+    
+	<!-- Certification Section -->
+	<section id="certifications" class="section">
+	    <div class="container">
+		<h2 class="text-center">Certifications</h2>
+		<div class="row">
+		    <!-- Certificate 1 -->
+		    <div class="col-md-6">
+		        <div class="certificate-card">
+		            <div class="certificate-img-container">
+		                <img src="./Cert/Cpt.jpg" alt="Certified Penetration Tester" class="certificate-img">
+		                <div class="certificate-info">
+		                    <h4>Certified Penetration Tester</h4>
+		                    <p>Issued by Red Team Hacker Academy</p>
+		                </div>
+		            </div>
+		        </div>
+		    </div>
+		    <!-- Certificate 2 -->
+		    <div class="col-md-6">
+		        <div class="certificate-card">
+		            <div class="certificate-img-container">
+		                <img src="./Cert/THM1.png" alt="Cybersecurity 101" class="certificate-img">
+		                <div class="certificate-info">
+		                    <h4>Cybersecurity 101</h4>
+		                    <p>Issued by TryHackMe</p>
+		                </div>
+		            </div>
+		        </div>
+		    </div>
+		</div>
+		<div class="row">
+		    <!-- Certificate 3 -->
+		    <div class="col-md-6">
+		        <div class="certificate-card">
+		            <div class="certificate-img-container">
+		                <img src="./Cert/THM2.png" alt="Pre-Security" class="certificate-img">
+		                <div class="certificate-info">
+		                    <h4>Pre-Security</h4>
+		                    <p>Issued by TryHackMe</p>
+		                </div>
+		            </div>
+		        </div>
+		    </div>
+		    <!-- Certificate 4 -->
+		    <div class="col-md-6">
+		        <div class="certificate-card">
+		            <div class="certificate-img-container">
+		                <img src="./Cert/darkweb.jpg" alt="Dark Web Foundation" class="certificate-img">
+		                <div class="certificate-info">
+		                    <h4>Dark Web Foundation</h4>
+		                    <p>Issued by Dark Web Academy</p>
+		                </div>
+		            </div>
+		        </div>
+		    </div>
+		</div>
+	    </div>
+	</section>
+
+
+    
+	<!-- Tools Section -->
+	<section id="tools" class="section">
+	    <div class="container">
+		<h2 class="text-center">Tools</h2>
+		<div class="row text-center mb-4">
+		    <!-- Tool 1: Burp Suite -->
+		    <div class="col-md-2">
+	    		<img src="./Svg/burpsuite.svg" alt="Burp Suite" style="width: 70px; height: 70px;">
+	    		<p>Burp Suite</p>
+	    	    </div>
+		    <!-- Tool 2: Nmap -->
+		    <div class="col-md-2">
+		        <img src="./Svg/nmap.svg" alt="Nmap" style="width: 70px; height: 70px;">
+		        <p>Nmap</p>
+		    </div>
+		    <!-- Tool 3: Metasploit Framework -->
+		    <div class="col-md-2">
+		        <img src="./Svg/metasploit.svg" alt="Metasploit" style="width: 70px; height: 70px;">
+		        <p>Metasploit</p>
+		    </div>
+		    <!-- Tool 4: Wireshark -->
+		    <div class="col-md-2">
+		        <img src="./Svg/wireshark.svg" alt="Wireshark" style="width: 70px; height: 70px;">
+		        <p>Wireshark</p>
+		    </div>
+		    <!-- Tool 5: Aircrack-ng -->
+		    <div class="col-md-2">
+		        <img src="./Svg/aircrack-ng.svg" alt="Aircrack-ng" style="width: 70px; height: 70px;">
+		        <p>Aircrack-ng</p>
+		    </div>
+		    <!-- Tool 6: Hydra -->
+		    <div class="col-md-2">
+		        <img src="./Svg/hydra.svg" alt="Hydra" style="width: 70px; height: 70px;">
+		        <p>Hydra</p>
+		    </div>
+		</div>
+
+		<div class="row text-center mb-4">
+		    <!-- Tool 7: Nikto -->
+		    <div class="col-md-2">
+		        <img src="./Svg/nikto.svg" alt="Nikto" style="width: 70px; height: 70px;">
+		        <p>Nikto</p>
+		    </div>
+		    <!-- Tool 8: SQLmap -->
+		    <div class="col-md-2">
+		        <img src="./Svg/sqlmap.svg" alt="Sqlmap" style="width: 70px; height: 70px;">
+		        <p>SQLmap</p>
+		    </div>
+		    <!-- Tool 9: Gobuster -->
+		    <div class="col-md-2">
+		        <img src="./Svg/gobuster.svg" alt="Gobuster" style="width: 70px; height: 70px;">
+		        <p>Gobuster</p>
+		    </div>
+		    <!-- Tool 10: Netcat -->
+		    <div class="col-md-2">
+		        <img src="./Svg/netcat.svg" alt="Netcat" style="width: 70px; height: 70px;">
+		        <p>Netcat</p>
+		    </div>
+		    <!-- Tool 11: Recon-ng -->
+		    <div class="col-md-2">
+		        <img src="./Svg/recon-ng.svg" alt="Recon-ng" style="width: 70px; height: 70px;">
+		        <p>Recon-ng</p>
+		    </div>
+		    <!-- Tool 12: John the Ripper -->
+		    <div class="col-md-2">
+		         <img src="./Svg/john.svg" alt="John the ripper" style="width: 70px; height: 70px;">
+		        <p>John the Ripper</p>
+		    </div>
+		</div>
+
+		<div class="row text-center">
+		    <!-- Tool 13: Sublist3r -->
+		    <div class="col-md-2">
+		        <i class="fas fa-list-alt" style="font-size: 40px;"></i>
+		        <p>Sublist3r</p>
+		    </div>
+		    <!-- Tool 14: Cobalt Strike -->
+		    <div class="col-md-2">
+		        <i class="fas fa-shield-alt" style="font-size: 40px;"></i>
+		        <p>Cobalt Strike</p>
+		    </div>
+		    <!-- Tool 15: Social-Engineer Toolkit -->
+		    <div class="col-md-2">
+		        <i class="fas fa-users" style="font-size: 40px;"></i>
+		        <p>SET</p>
+		    </div>
+		    <!-- Tool 16: OWASP ZAP -->
+		    <div class="col-md-2">
+		        <i class="fas fa-bug" style="font-size: 40px;"></i>
+		        <p>OWASP ZAP</p>
+		    </div>
+		    <!-- Tool 17: Sn1per -->
+		    <div class="col-md-2">
+		        <i class="fas fa-crosshairs" style="font-size: 40px;"></i>
+		        <p>Sn1per</p>
+		    </div>
+		    <!-- Tool 18: Maltego -->
+		    <div class="col-md-2">
+		        <i class="fas fa-project-diagram" style="font-size: 40px;"></i>
+		        <p>Maltego</p>
+		    </div>
+		</div>
+	    </div>
+	</section>
+
+
+
+    <!-- Projects Section -->
+    <section id="projects" class="section">
+        <div class="container">
+            <h2 class="text-center">Projects</h2>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Web App Pentesting</h5>
+                            <p class="card-text">Identified critical vulnerabilities in a client’s web application using Burp Suite and SQLMap.</p>
+                            <a href="#" class="btn btn-primary">Learn More</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Network Security Audit</h5>
+                            <p class="card-text">Conducted a thorough network assessment to mitigate risks and secure endpoints.</p>
+                            <a href="#" class="btn btn-primary">Learn More</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Custom Exploit Development</h5>
+                            <p class="card-text">Developed a custom exploit for an outdated software vulnerability.</p>
+                            <a href="#" class="btn btn-primary">Learn More</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+   <!-- Write-Ups Section -->
+	<section id="writeups" class="section">
+	    <div class="container">
+		<h2 class="text-center">Write-Ups</h2>
+		<div class="row">
+		    <!-- Write-Up 1 -->
+		    <div class="col-md-4">
+		        <div class="writeup-card">
+		            <a href="./Writeup/Ariekei_writeup/Ariekei.html">
+		                <img src="./Writeup/Ariekei.png" alt="Write-Up 1" class="writeup-img">
+		                <div class="writeup-info">
+		                    <h4>Ariekei</h4>
+		                    <p>Brief description or summary of the write-up goes here.</p>
+		                    <button class="read-more">Read More</button>
+		                </div>
+		            </a>
+		        </div>
+		    </div>
+		    <!-- Write-Up 2 -->
+		    <div class="col-md-4">
+		        <div class="writeup-card">
+		            <a href="./Writeup/">
+		                <img src="./Writeup/EvilCUPS.png" alt="Write-Up 2" class="writeup-img">
+		                <div class="writeup-info">
+		                    <h4>EvilCUPS</h4>
+		                    <p>Brief description or summary of the write-up goes here.</p>
+		                    <button class="read-more">Read More</button>
+		                </div>
+		            </a>
+		        </div>
+		    </div>
+		    <!-- Write-Up 3 -->
+		    <div class="col-md-4">
+		        <div class="writeup-card">
+		            <a href="writeup3.html">
+		                <img src="./Writeup/OpenAdmin.png" alt="Write-Up 3" class="writeup-img">
+		                <div class="writeup-info">
+		                    <h4>OpenAdmin</h4>
+		                    <p>Brief description or summary of the write-up goes here.</p>
+		                    <button class="read-more">Read More</button>
+		                </div>
+		            </a>
+		        </div>
+		    </div>
+		</div>
+		<!-- Additional rows for more write-ups -->
+		<div class="row">
+		    <!-- Write-Up 4 -->
+		    <div class="col-md-4">
+		        <div class="writeup-card">
+		            <a href="writeup4.html">
+		                <img src="./Writeup/Secret.png" alt="Write-Up 4" class="writeup-img">
+		                <div class="writeup-info">
+		                    <h4>Secret</h4>
+		                    <p>Brief description or summary of the write-up goes here.</p>
+		                    <button class="read-more">Read More</button>
+		                </div>
+		            </a>
+		        </div>
+		    </div>
+		    <!-- Write-Up 5 -->
+		    <div class="col-md-4">
+		        <div class="writeup-card">
+		            <a href="writeup5.html">
+		                <img src="./Writeup/Trickster.png" alt="Write-Up 5" class="writeup-img">
+		                <div class="writeup-info">
+		                    <h4>Trickster</h4>
+		                    <p>Brief description or summary of the write-up goes here.</p>
+		                    <button class="read-more">Read More</button>
+		                </div>
+		            </a>
+		        </div>
+		    </div>
+		    <!-- Write-Up 6 -->
+		    <div class="col-md-4">
+		        <div class="writeup-card">
+		            <a href="writeup6.html">
+		                <img src="./Writeup/UnderPass.png" alt="Write-Up 6" class="writeup-img">
+		                <div class="writeup-info">
+		                    <h4>UnderPass</h4>
+		                    <p>Brief description or summary of the write-up goes here.</p>
+		                    <button class="read-more">Read More</button>
+		                </div>
+		            </a>
+		        </div>
+		    </div>
+		</div>
+	    </div>
+	    
+        <!-- See All Write-Ups Button -->
+        <div class="row">
+            		<div class="col-12 text-center">
+                		<a href="all_writeups.html" class="btn btn-primary">See All Write-Ups</a>
+           		 </div>
+        	</div>
+   	 </div>
+	</section>
+
+
+
+    <!-- Contact Section -->
+    <section id="contact" class="section text-center">
+        <div class="container">
+            <h2>Contact Me</h2>
+            <p>Have a project or collaboration in mind? Get in touch!</p>
+            <a href="mailto:your.email@example.com" class="btn btn-primary">Email Me</a>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        // Dynamic Markdown Rendering (writeup.html logic)
+        if (window.location.pathname.endsWith('writeup.html')) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const file = urlParams.get('file');
+            if (file) {
+                fetch(file)
+                    .then(response => response.text())
+                    .then(markdown => {
+                        document.body.innerHTML = `
+                            <div class='container section'>
+                                <a href='index.html' class='btn btn-primary mb-4'>Back to Portfolio</a>
+                                <div id='content'></div>
+                            </div>
+                        `;
+                        document.getElementById('content').innerHTML = marked.parse(markdown);
+                    })
+                    .catch(error => {
+                        document.body.innerHTML = '<div class="container section text-center"><p>Error loading content.</p></div>';
+                    });
+            }
+        }
+    </script>
+</body>
+</html>
+
