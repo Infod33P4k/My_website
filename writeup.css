@@ -48,6 +48,22 @@ a:hover {
 .socials a:hover {
     color: #32cd32;
 }
+.right-navbar {
+    position: fixed;
+    top: 70px;
+    right: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.right-navbar a {
+    color: #c9d1d9;
+    text-align: left;
+    font-size: 16px;
+}
+.right-navbar a:hover {
+    text-decoration: underline;
+}
 terminal-window {
     width: 80%;
     height: 70%;
