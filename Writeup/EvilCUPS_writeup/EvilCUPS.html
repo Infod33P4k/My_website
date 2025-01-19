@@ -41,7 +41,7 @@
     <!-- Sections -->
     <div class="container">
         <section id="machine-info" class="section">   
-            <h2>Machine Info</h2>
+            <h2>Machine Info:</h2>
             <p>
       <strong>EvilCUPS</strong> is a <strong>Medium difficulty Linux machine</strong> that features a 
       <strong>CUPS Command Injection Vulnerability</strong> 
@@ -64,7 +64,7 @@
         </section>
 
         <section id="enumeration" class="section">
-    <h2>Enumeration</h2>
+    <h2>Enumeration:</h2>
     <h3>Nmap:</h3>
     <!-- Terminal Window: Rustscan Output -->
     <div class="terminal-window">
@@ -122,7 +122,7 @@ Nmap done: 1 IP address (1 host up) scanned in 1.07 seconds
 </section>
 
 <section id="Command Execution" class="section">
-<h2><strong><span style="border-bottom:0.05em solid">Getting Command Execution:</span></strong></h2><p >A public proof-of-concept (PoC) for automating this attack is available at <a href="https://github.com/ippsec/evil-cups">https://github.com/ippsec/evil-cups</a>. This PoC sets up an IPP server on port 12345, which delivers malicious printer attributes designed to inject a Foomatic-RIP payload. It then sends a cups-browsed packet to the target, instructing the CUPS server to install the crafted printer.</p>
+<h2><strong>Getting Command Execution:</strong></h2><p >A public proof-of-concept (PoC) for automating this attack is available at <a href="https://github.com/ippsec/evil-cups">https://github.com/ippsec/evil-cups</a>. This PoC sets up an IPP server on port 12345, which delivers malicious printer attributes designed to inject a Foomatic-RIP payload. It then sends a cups-browsed packet to the target, instructing the CUPS server to install the crafted printer.</p>
 <div class="terminal-window">
         <div class="window-header">
             <span class="button close"></span>
@@ -135,6 +135,7 @@ Nmap done: 1 IP address (1 host up) scanned in 1.07 seconds
 </div>
 </div>
 <img src="./cmdexec.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
 <p>To achieve command execution, a print job must be sent to the installed printer. The CUPS Management Server does not treat printing test pages as a sensitive action, meaning unauthenticated users can perform this task if the server is exposed.</p><p>Steps to execute the command:</p><ol type="1" class="numbered-list" start="1"><li>Navigate to <code>http://10.129.231.157:631</code>.</li></ol><ol type="1" class="numbered-list" start="2"><li>Click on <strong>Printers</strong> and select the printer you installed.</li></ol><ol type="1" class="numbered-list" start="3"><li>Open the <strong>Maintenance</strong> dropdown menu.</li></ol><ol type="1" class="numbered-list" start="4"><li>Select <strong>Print Test Page</strong>.</li></ol><p>This action will trigger the execution of the malicious command embedded in the Foomatic-RIP payload.</p>
 <img src="./rev.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
 <br><br>
@@ -158,7 +159,7 @@ cat user.txt
 </section>
 
 <section id="Privilege Escalation" class="section">
-<h2><strong>Privilege Escalation:</strong></h2><p >The CUPS service typically runs as the <code>lp</code> user, which has limited permissions. However, one capability of this user is accessing cached printing jobs. If you navigate to the CUPS Management Server, click on the printer queue (e.g., <strong>Canon_MB2300_series</strong>), and review <strong>Completed Jobs</strong>, you may notice a job was sent to the printer. Jobs often end in <code>1</code>, indicating they are the first job.</p><h3>Cached Job Storage</h3><p>Cached print jobs are stored in <code>/var/spool/cups/</code>. The <code>lp</code> user only has <strong>execute</strong> permissions for this directory, meaning it cannot list the directory contents. However, if you know the exact filename of a cached job and it is readable, the <code>lp</code> user can access it.</p><h3>File Naming Format</h3><p>By default, completed job files follow this naming convention:</p><p><code>d&lt;print job&gt;-&lt;page number&gt;</code></p><ul class="bulleted-list"><li style="list-style-type:disc"><strong>Print job</strong>: A 5-digit number.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc"><strong>Page number</strong>: A 3-digit number.</li></ul><p>For example, <strong>Job 1, Page 1</strong> would be stored as <code>d00001-001</code>.</p><h3>Extracting the PostScript File</h3><p>To retrieve and view the contents of a cached print job, use the following command:</p>
+<h2><strong>Privilege Escalation:</strong></h2><p >The CUPS service typically runs as the <code>lp</code> user, which has limited permissions. However, one capability of this user is accessing cached printing jobs. If you navigate to the CUPS Management Server, click on the printer queue (e.g., <strong>Canon_MB2300_series</strong>), and review <strong>Completed Jobs</strong>, you may notice a job was sent to the printer. Jobs often end in <code>1</code>, indicating they are the first job.</p><h3>Cached Job Storage:</h3><p>Cached print jobs are stored in <code>/var/spool/cups/</code>. The <code>lp</code> user only has <strong>execute</strong> permissions for this directory, meaning it cannot list the directory contents. However, if you know the exact filename of a cached job and it is readable, the <code>lp</code> user can access it.</p><h3>File Naming Format:</h3><p>By default, completed job files follow this naming convention:</p><p><code>d&lt;print job&gt;-&lt;page number&gt;</code></p><ul class="bulleted-list"><li style="list-style-type:disc"><strong>Print job</strong>: A 5-digit number.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc"><strong>Page number</strong>: A 3-digit number.</li></ul><p>For example, <strong>Job 1, Page 1</strong> would be stored as <code>d00001-001</code>.</p><h3>Extracting the PostScript File:</h3><p>To retrieve and view the contents of a cached print job, use the following command:</p>
 <div class="terminal-window">
         <div class="window-header">
             <span class="button close"></span>

