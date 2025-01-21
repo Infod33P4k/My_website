@@ -197,3 +197,83 @@ a:hover {
         margin-bottom: 20px;
     }
 }
+
+/* Project Card Styling */
+.project-card {
+    background:#0d1117 ;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 40px 20px;
+    margin: 20px 0;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Terminal Window Styling */
+.terminal-window {
+    background-color: #1e1e1e;  /* Dark background for the terminal window */
+    border-radius: 8px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.window-header {
+    background-color: #333333;
+    padding: 10px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.button {
+    width: 12px;
+    height: 12px;
+    margin-right: 5px;
+    border-radius: 50%;
+    background-color: #ff3b30;  /* Red for close button */
+    cursor: pointer;
+}
+
+.button.minimize {
+    background-color: #ffcc00;  /* Yellow for minimize button */
+}
+
+.button.maximize {
+    background-color: #4cd964;  /* Green for maximize button */
+}
+
+.terminal {
+    padding: 20px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 16px;
+    line-height: 1.5;
+    background-color: #1e1e1e;
+    color: #8fbc8f;  /* Light green for the terminal text */
+}
+
+.terminal .ascii-banner {
+    font-family: "Courier New", Courier, monospace;
+    white-space: pre-wrap;  /* Ensure the ASCII banner is properly wrapped */
+    color: #8fbc8f;  /* Light green for ASCII text */
+}
+
+/* Button Styling */
+.project-card .btn {
+    background-color: #28a745;
+    color: #fff;
+    border-radius: 5px;
+    padding: 10px 30px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.project-card .btn:hover {
+    background-color: #218838;
+    color: #fff;
+}
+  color: #fff;
+}
