@@ -48,6 +48,12 @@ a:hover {
 .socials a:hover {
     color: #32cd32;
 }
+.copyright {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-size: 14px;
+}
 
 /* Certification Section */
 #certifications {
