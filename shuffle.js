@@ -64,13 +64,13 @@ const writeups = [
       title: "Editorial",
       link: "./Writeup/Editorial_writeup/Editorial.html",
       image: "./Writeup/Editorial.png",
-      description: "Linux · Insane"
+      description: "Linux · Easy"
     },
     {
       title: "OnlyForYou",
       link: "./Writeup/OnlyForYou_writeup/OnlyForYou.html",
       image: "./Writeup/OnlyForYou.png",
-      description: "Windows · Easy"
+      description: "Linux · Medium"
     }
   ];
   
