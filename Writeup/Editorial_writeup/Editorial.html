@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3p4k-Editorial HTB</title>
+    <link rel="icon" type="image/png" href="https://labs.hackthebox.com/storage/avatars/a466db5ce4f7aaea98f588d1cb71a0aa.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../writeup.css">
+    </head>
+<body>
+    <!-- Socials -->
+    <div class="socials">
+        <a href="https://www.linkedin.com/in/d3p4k/" target="_blank"><i class="fab fa-linkedin"></i></a>
+        <a href="https://app.hackthebox.com/profile/1979344" target="_blank">
+            <svg style="width: 24px; height: 24px;" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <title>Hack The Box</title>
+                <path d="M11.9959.0008a1.1187 1.1187 0 00-.057.002.8993.8993 0 00-.2358.0498.9067.9067 0 00-.1652.079L1.9357 5.675a.889.889 0 00-.4444.7699c0 .006.0004.0128.0006.0192-.0002.007 0 .014 0 .0212V17.556a.889.889 0 00.469.7837l9.5983 5.5416c.018.0102.036.0197.054.0287v.002a.8568.8568 0 00.083.0348c0 .001.01.003.012.004.028.01.056.0177.085.0245.01.001.011.003.016.004.028.006.057.0112.086.0146 0 .0005.01.0009.014.001.03.003.061.005.091.005s.061-.002.091-.005c0-.0005.01-.0009.014-.001a.6831.6831 0 00.086-.0146c.01-.001.011-.002.016-.004a.9404.9404 0 00.085-.0245c0-.001.01-.003.012-.004a.8818.8818 0 00.083-.0347v-.002a1.086 1.086 0 00.054-.0287l9.5986-5.5416a.889.889 0 00.4689-.7837V6.4786c0-.009-.0006-.0172-.0008-.0258h.0003v-.008a.8886.8886 0 00-.3117-.6755c-.01-.008-.019-.0162-.029-.0241 0-.002-.01-.005-.01-.007a.8988.8988 0 00-.1074-.0705L12.4533.1267a.8872.8872 0 00-.4646-.1266zm.01 2.2523c.072 0 .1443.0187.209.056l6.5366 3.774c.2789.161.2789.5633 0 .7243l-6.5367 3.774a.4182.4182 0 01-.4182 0L5.26 6.8074c-.2788-.1609-.2789-.5633 0-.7243l6.5368-3.774a.4193.4193 0 01.209-.056zm-8.0801 6.458a.4145.4145 0 01.215.0565l6.524 3.7666a.417.417 0 01.2086.3612v7.5326c0 .3212-.3477.522-.626.3613l-6.5237-3.7666a.4172.4172 0 01-.2086-.3613V9.1288c0-.2408.1955-.414.4107-.4177zm16.1599 0c.215.004.4107.1768.4107.4177v7.5325c0 .149-.08.2868-.2087.3614l-6.5239 3.7666c-.278.1606-.6258-.0401-.6258-.3614v-7.5325c0-.149.08-.2867.2086-.3613l6.5238-3.7666a.415.415 0 01.2152-.0565z" fill="white"></path>
+            </svg>
+        </a>
+        <a href="https://github.com/Infod33P4k" target="_blank"><i class="fab fa-github"></i></a>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Editorial - Hack the box</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="../../index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#Write-up">Write-up</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sections -->
+    <div class="container">
+        <section id="machine-info" class="section">   
+            <h2>Machine Info</h2>
+            <p>
+                <strong>Editorial</strong> is an easy difficulty Linux machine that features a publishing web application 
+                vulnerable to <code>Server-Side Request Forgery (SSRF)</code>. This vulnerability is leveraged to gain 
+                access to an internal running API, which is then leveraged to obtain credentials that lead to 
+                <strong>SSH</strong> access to the machine.
+              </p>
+              <p>
+                Enumerating the system further reveals a Git repository that is leveraged to reveal credentials for a 
+                new user. The <strong>root</strong> user can be obtained by exploiting 
+                <a href="https://nvd.nist.gov/vuln/detail/CVE-2022-24439" target="_blank">CVE-2022-24439</a> and the 
+                sudo configuration.
+              </p>              
+            <img src="https://labs.hackthebox.com/storage/avatars/a466db5ce4f7aaea98f588d1cb71a0aa.png">
+        </section>
+
+        <section id="enumeration" class="section">
+    <h2>Enumeration:</h2>
+    <h3>Nmap:</h3>
+    <!-- Terminal Window: Rustscan Output -->
+    <div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal">
+            <pre><code class="language-bash">nmap -sC -sV 10.10.11.20 -oA nmap/Editorial
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-02-13 18:26 IST
+Nmap scan report for 10.10.11.20
+Host is up (0.042s latency).
+Not shown: 998 closed tcp ports (reset)
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.9p1 Ubuntu 3ubuntu0.7 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   256 0d:ed:b2:9c:e2:53:fb:d4:c8:c1:19:6e:75:80:d8:64 (ECDSA)
+|_  256 0f:b9:a7:51:0e:00:d5:7b:5b:7c:5f:bf:2b:ed:53:a0 (ED25519)
+80/tcp open  http    nginx 1.18.0 (Ubuntu)
+|_http-server-header: nginx/1.18.0 (Ubuntu)
+|_http-title: Did not follow redirect to http://editorial.htb
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 9.79 seconds
+</code></pre>
+        </div>
+    </div>
+    <p>
+        The target has three open ports: <strong>22/tcp</strong> and <strong>1022/tcp</strong> running SSH (OpenSSH 7.2p2 and 6.6.1p1), and 
+        <strong>443/tcp</strong> hosting an SSL-enabled web service (nginx 1.10.2) with domains <strong>calvin.ariekei.htb</strong> and 
+        <strong>beehive.ariekei.htb</strong>. These services provide avenues for further enumeration.
+    </p>
+    
+    <img src="./printer.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+</section>
+ </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
