@@ -59,6 +59,18 @@ const writeups = [
       link: "./Writeup/Cicada_writeup/Cicada.html",
       image: "./Writeup/Cicada.png",
       description: "Windows · Easy"
+    },
+    {
+      title: "Editorial",
+      link: "./Writeup/Editorial_writeup/Editorial.html",
+      image: "./Writeup/Editorial.png",
+      description: "Linux · Insane"
+    },
+    {
+      title: "OnlyForYou",
+      link: "./Writeup/OnlyForYou_writeup/OnlyForYou.html",
+      image: "./Writeup/OnlyForYou.png",
+      description: "Windows · Easy"
     }
   ];
   
