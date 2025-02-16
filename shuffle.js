@@ -71,6 +71,24 @@ const writeups = [
       link: "./Writeup/OnlyForYou_writeup/OnlyForYou.html",
       image: "./Writeup/OnlyForYou.png",
       description: "Linux · Medium"
+    },
+    {
+      title: "Hawk",
+      link: "./Writeup/Hawk_writeup/Hawk.html",
+      image: "./Writeup/Hawk.png",
+      description: "Linux · Medium"
+    },
+    {
+      title: "Usage",
+      link: "./Writeup/Usage_writeup/Usage.html",
+      image: "./Writeup/Usage.png",
+      description: "Linux · Easy"
+    },
+    {
+      title: "Titanic",
+      link: "../Writeup/Titanic_writeup/Titanic.html",
+      image: "./Writeup/Titanic.png",
+      description: "Linux · Easy"
     }
   ];
   
