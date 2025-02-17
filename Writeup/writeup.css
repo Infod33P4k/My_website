@@ -112,3 +112,81 @@ terminal-window {
 .terminal .prompt {
     color: #00ff00;
 }
+.htb-badge {
+  width: 220px;
+  height: 50px;
+  background-color: #343c41;
+  border-radius: 4px;
+  text-align: left;
+  background-image: url(https://www.hackthebox.com/images/icon20.png);
+  background-position: right 5px bottom 5px;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
+}
+
+.htb-avatar-container {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  margin: 5px;
+}
+
+.htb-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+}
+
+.htb-info {
+  font-family: "Roboto", monospace;
+  padding-left: 5px;
+}
+
+.htb-nickname {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.htb-rank {
+  color: #ffffff;
+  font-size: 11px;
+}
+
+.htb-ranking {
+  color: #ffffff;
+  font-size: 10px;
+}
+
+.htb-points {
+  color: #56C0E0;
+  font-size: 10px;
+}
+
+.htb-respect {
+  color: #f7af3e;
+  font-size: 10px;
+}
+
+.htb-line {
+  line-height: 12px;
+  margin: 0;
+  padding: 0;
+}
+
+.htb-link {
+  color: #9acc14;
+  font-size: 0.6em;
+  text-decoration: none;
+}
+
+.htb-link:hover {
+  text-decoration: underline;
+}
+
+.htb-icon {
+  width: 10px;
+  height: 10px;
+}
+
