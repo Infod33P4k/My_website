@@ -86,7 +86,7 @@ const writeups = [
     },
     {
       title: "Titanic",
-      link: "../Writeup/Titanic_writeup/Titanic.html",
+      link: "./Writeup/Titanic_writeup/Titanic.html",
       image: "./Writeup/Titanic.png",
       description: "Linux · Easy"
     }
