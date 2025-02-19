@@ -1,7 +1,7 @@
 // Update these values to reflect your current Hack The Box stats
 const htbRank = "Pro Hacker";
-const htbRanking = "504";
-const htbPoints = "371";
+const htbRanking = "475";
+const htbPoints = "418";
 const htbRespect = "1";
 
 // Dynamically update the badge content
